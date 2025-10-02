@@ -182,28 +182,50 @@ async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
     if (!cardElement) return;
 
-    // انتظر تحميل الخطوط
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
     }
 
     try {
-        // ✅ تأكيد حفظ مكان وحجم صورة الموظف
         const photo = document.querySelector(".employee-photo-container img");
+        let originalTransform = null;
+
         if (photo) {
-            const transformStyle = photo.style.transform;
-            if (transformStyle) {
-                // نحفظ الترانسفورم كـ inline attribute
-                photo.setAttribute("style", `${photo.getAttribute("style")}; transform:${transformStyle};`);
-            }
+            // احفظ الترانسفورم
+            originalTransform = photo.style.transform;
+
+            // 🟢 نزّل الترانسفورم فعليًا على الصورة نفسها
+            const rect = photo.getBoundingClientRect();
+            const containerRect = photo.parentElement.getBoundingClientRect();
+
+            const offsetX = rect.left - containerRect.left;
+            const offsetY = rect.top - containerRect.top;
+
+            // خلي الترانسفورم ثابت كـ position
+            photo.style.transform = "none";
+            photo.style.position = "absolute";
+            photo.style.left = offsetX + "px";
+            photo.style.top = offsetY + "px";
+            photo.style.width = rect.width + "px";
+            photo.style.height = rect.height + "px";
         }
 
         const canvas = await html2canvas(cardElement, {
-            scale: 3,         // جودة أعلى
-            useCORS: true,    // لو في صور خارجية
+            scale: 3,
+            useCORS: true,
             logging: false,
             backgroundColor: null
         });
+
+        // رجع الصورة زي ما كانت
+        if (photo && originalTransform !== null) {
+            photo.style.transform = originalTransform;
+            photo.style.position = "";
+            photo.style.left = "";
+            photo.style.top = "";
+            photo.style.width = "";
+            photo.style.height = "";
+        }
 
         const dataUrl = canvas.toDataURL("image/png", 1.0);
         const link = document.createElement('a');
