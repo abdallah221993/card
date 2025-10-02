@@ -182,14 +182,25 @@ async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
     if (!cardElement) return;
 
+    // انتظر تحميل الخطوط
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
     }
 
     try {
+        // ✅ تأكيد حفظ مكان وحجم صورة الموظف
+        const photo = document.querySelector(".employee-photo-container img");
+        if (photo) {
+            const transformStyle = photo.style.transform;
+            if (transformStyle) {
+                // نحفظ الترانسفورم كـ inline attribute
+                photo.setAttribute("style", `${photo.getAttribute("style")}; transform:${transformStyle};`);
+            }
+        }
+
         const canvas = await html2canvas(cardElement, {
-            scale: 3,
-            useCORS: true,
+            scale: 3,         // جودة أعلى
+            useCORS: true,    // لو في صور خارجية
             logging: false,
             backgroundColor: null
         });
@@ -204,6 +215,7 @@ async function downloadCard() {
         console.error('خطأ أثناء توليد الصورة:', error);
     }
 }
+
 
 // --------------------------------------------------------------
 
