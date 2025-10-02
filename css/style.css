@@ -225,10 +225,10 @@ padding: 20px;
 /* صورة الموظف بفريم شيك */
 .employee-photo-container {
     width: 150px;
-    aspect-ratio: 1 / 1; /* ✅ يحافظ على الشكل دائرة */
+    aspect-ratio: 1 / 1;
     border-radius: 50%;
     overflow: hidden;
-    background: #f1f5f9; /* الدائرة البيضاء الداخلية */
+    background: #f1f5f9; /* الدائرة الداخلية */
     display: flex;
     justify-content: center;
     align-items: center;
@@ -236,9 +236,11 @@ padding: 20px;
     position: relative;
     z-index: 2;
 
-    /* ✅ الإطار الأبيض الخارجي */
+    /* ✅ الإطار الأبيض + ظل */
+    border: 4px solid #fff; /* الفريم الأبيض */
     box-shadow: 0 0 0 4px #fff, 0 6px 20px rgba(0,0,0,0.3);
 }
+
 
 /* الصورة */
 .employee-photo-container img {

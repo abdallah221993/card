@@ -191,23 +191,28 @@ async function downloadCard() {
         let originalTransform = null;
 
         if (photo) {
-            // احفظ الترانسفورم
+            // 🟢 احفظ الترانسفورم
             originalTransform = photo.style.transform;
 
-            // 🟢 نزّل الترانسفورم فعليًا على الصورة نفسها
-            const rect = photo.getBoundingClientRect();
-            const containerRect = photo.parentElement.getBoundingClientRect();
+            // خليه يتطبق على inline style مباشرة داخل نفس الكونتينر
+            const matrix = window.getComputedStyle(photo).transform;
 
-            const offsetX = rect.left - containerRect.left;
-            const offsetY = rect.top - containerRect.top;
+            if (matrix && matrix !== "none") {
+                // خزن كنسخة "أصلية"
+                photo.setAttribute("data-transform", originalTransform);
 
-            // خلي الترانسفورم ثابت كـ position
-            photo.style.transform = "none";
-            photo.style.position = "absolute";
-            photo.style.left = offsetX + "px";
-            photo.style.top = offsetY + "px";
-            photo.style.width = rect.width + "px";
-            photo.style.height = rect.height + "px";
+                // شيل transform وخليه داخل clip-path بتاع الكونتينر (الدائرة)
+                const rect = photo.getBoundingClientRect();
+                const containerRect = photo.parentElement.getBoundingClientRect();
+
+                // نزّل الصورة بمكانها النسبي
+                photo.style.transform = "none";
+                photo.style.position = "absolute";
+                photo.style.left = (rect.left - containerRect.left) + "px";
+                photo.style.top = (rect.top - containerRect.top) + "px";
+                photo.style.width = rect.width + "px";
+                photo.style.height = rect.height + "px";
+            }
         }
 
         const canvas = await html2canvas(cardElement, {
