@@ -419,11 +419,12 @@ photoContainer.addEventListener("touchend", () => {
 });
 
 function updateTransform() {
-    photo.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
-}
+    const containerWidth = photoContainer.offsetWidth;
+    const containerHeight = photoContainer.offsetHeight;
 
-function getDistance(touch1, touch2) {
-    const dx = touch2.clientX - touch1.clientX;
-    const dy = touch2.clientY - touch1.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
+    // حوّل الإزاحة لـ نسب مئوية
+    const offsetXPercent = (currentX / containerWidth) * 100;
+    const offsetYPercent = (currentY / containerHeight) * 100;
+
+    photo.style.transform = `translate(${offsetXPercent}%, ${offsetYPercent}%) scale(${scale})`;
 }
