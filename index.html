@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مولد بطاقات الموظفين - Kabbani Furniture</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-id-card"></i> مولد بطاقة موظف </h1>
+        </header>
+
+        <div class="main-content">
+            <!-- نموذج إدخال البيانات -->
+            <div class="form-section">
+                <h2>معلومات الموظف</h2>
+                <form id="employeeForm">
+                    <div class="form-group">
+                        <label for="employeeName">اسم الموظف</label>
+                        <input type="text" id="employeeName" placeholder="مثل: محمد أحمد علي" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="jobTitle">المسمى الوظيفي</label>
+                        <input type="text" id="jobTitle" placeholder="مثل: أخصائي مبيعات" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="phoneNumber">رقم الهاتف</label>
+                        <input type="tel" id="phoneNumber" placeholder="مثل: 01069899926" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="employeeImage">صورة الموظف</label>
+                        <div class="image-upload">
+                            <input type="file" id="employeeImage" accept="image/*" required>
+                            <div class="upload-placeholder">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                                <p>اضغط لرفع الصورة أو اسحبها هنا</p>
+                                <small>سيتم إزالة الخلفية تلقائياً</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" id="generateCard">
+                            <i class="fas fa-magic"></i>
+                            إنشاء البطاقة
+                        </button>
+                        <button type="reset" id="clearForm">
+                            <i class="fas fa-trash"></i>
+                            مسح البيانات
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- معاينة البطاقة -->
+            <div class="preview-section">
+                <h2>معاينة البطاقة</h2>
+                <div class="card-preview">
+
+                    <!-- ✅ غلفت البطاقة بـ cardExportArea -->
+                    <div id="cardExportArea">
+                        <div class="business-card square-token" id="businessCard">
+                            <!-- شعار الشركة -->
+                            <div class="logo-area">
+                                <img src="images/logo.png" alt="Kabbani Logo">
+                            </div>
+
+                            <!-- صورة الموظف -->
+                            <div class="employee-photo-container">
+                                <img id="processedImage" style="display: none;" alt="صورة الموظف">
+                                <div class="photo-placeholder">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                            </div>
+
+                            <!-- بيانات الموظف -->
+                            <div class="employee-info-center">
+                                <div class="employee-name-card">
+                                    <span id="cardEmployeeName">اسم الموظف</span>
+                                </div>
+                                <div class="employee-job-card">
+                                    <span id="cardJobTitle">المسمى الوظيفي</span>
+                                </div>
+                                <div class="employee-phone-card">
+                                    <i class="fas fa-phone"></i>
+                                    <span id="cardPhoneNumber">رقم الهاتف</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ✅ نهاية cardExportArea -->
+
+                    <!-- أزرار التحكم -->
+                    <div class="card-actions">
+                        <button id="downloadCard" disabled>
+                            <i class="fas fa-download"></i>
+                            تحميل البطاقة
+                        </button>
+                        <button id="shareCard" disabled>
+                            <i class="fas fa-share-alt"></i>
+                            مشاركة على واتساب
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- حالة التحميل -->
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i>
+                <p>جارِ معالجة الصورة...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- المكتبة -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="js/background-remover.js"></script>
+    <script src="js/script.js"></script>
+</body>
+</html>
