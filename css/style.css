@@ -198,11 +198,11 @@ body {
     flex: 0 0 auto;
     text-align: center;
     width: 100%;
-    margin-bottom: 20px;
+    margin-bottom: 5px;
 }
 
 .logo-area img {
-    max-width: 120px;
+    max-width: 160px;
     height: auto;
 }
 
