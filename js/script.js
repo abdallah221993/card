@@ -216,7 +216,7 @@ async function downloadCard() {
         }
 
         const canvas = await html2canvas(cardElement, {
-            scale: 3,
+            scale: 4,
             useCORS: true,
             logging: false,
             backgroundColor: null
