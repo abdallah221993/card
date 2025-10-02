@@ -1,4 +1,4 @@
-// script.js (مُحدّث لاستخدام remove.bg API مع fallback محلي + تحميل البطاقة بجودة عالية)
+// script.js (مُحدّث لاستخدام remove.bg API مع fallback محلي + تحميل البطاقة بجودة عالية + تحريك/تكبير الصورة)
 
 // --------- إعدادات (ضع هنا مفتاحك الخاص) ----------
 const REMOVE_BG_API_KEY = 'VXz55xAL48D2xp4LL3EQhTYh'; // **احفظه سرياً**
@@ -145,8 +145,6 @@ function displayProcessedImage(dataUrl) {
     updatePreviewText();
 }
 
-// تم إزالة وظائف سحب الصورة للتصميم المبسط
-
 async function handleFormSubmit(event) {
     event.preventDefault();
     if (!validateForm()) return;
@@ -184,17 +182,16 @@ async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
     if (!cardElement) return;
 
-    // انتظر تحميل الخطوط
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
     }
 
     try {
         const canvas = await html2canvas(cardElement, {
-            scale: 3,         // جودة أعلى
-            useCORS: true,    // لو في صور خارجية
+            scale: 3,
+            useCORS: true,
             logging: false,
-            backgroundColor: null // يخلي الخلفية شفافة لو حابب
+            backgroundColor: null
         });
 
         const dataUrl = canvas.toDataURL("image/png", 1.0);
@@ -236,7 +233,6 @@ async function shareOnWhatsApp() {
         alert("المشاركة بالصور مش مدعومة على هذا المتصفح.");
     }
 }
-
 
 // إشعارات
 function showNotification(message, type = 'info') {
@@ -305,11 +301,90 @@ function getNotificationColor(type) {
     return colors[type] || '#3498db';
 }
 
-// تحميل / إخفاء شاشة التحميل
 function showLoading(show, message = '') {
     if (!loadingOverlay) return;
     loadingOverlay.style.display = show ? 'flex' : 'none';
     if (show && message) {
         loadingOverlay.querySelector('p').textContent = message;
     }
+}
+
+// ============ تحكم في صورة الموظف (سحب + تكبير/تصغير على الكمبيوتر والموبايل) ============
+const photoContainer = document.querySelector(".employee-photo-container");
+const photo = photoContainer.querySelector("img");
+
+let isDragging = false;
+let startX, startY;
+let currentX = 0, currentY = 0;
+let scale = 1;
+
+// Mouse
+photoContainer.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startX = e.clientX - currentX;
+    startY = e.clientY - currentY;
+    photo.style.cursor = "grabbing";
+});
+
+window.addEventListener("mouseup", () => {
+    isDragging = false;
+    photo.style.cursor = "grab";
+});
+
+window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    currentX = e.clientX - startX;
+    currentY = e.clientY - startY;
+    updateTransform();
+});
+
+// Scroll zoom (PC)
+photoContainer.addEventListener("wheel", (e) => {
+    e.preventDefault();
+    scale += e.deltaY * -0.001;
+    scale = Math.min(Math.max(0.5, scale), 3);
+    updateTransform();
+});
+
+// Touch (Mobile)
+let initialDistance = 0;
+let initialScale = 1;
+
+photoContainer.addEventListener("touchstart", (e) => {
+    if (e.touches.length === 1) {
+        isDragging = true;
+        startX = e.touches[0].clientX - currentX;
+        startY = e.touches[0].clientY - currentY;
+    } else if (e.touches.length === 2) {
+        initialDistance = getDistance(e.touches[0], e.touches[1]);
+        initialScale = scale;
+    }
+});
+
+photoContainer.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && isDragging) {
+        currentX = e.touches[0].clientX - startX;
+        currentY = e.touches[0].clientY - startY;
+        updateTransform();
+    } else if (e.touches.length === 2) {
+        const newDistance = getDistance(e.touches[0], e.touches[1]);
+        scale = initialScale * (newDistance / initialDistance);
+        scale = Math.min(Math.max(0.5, scale), 3);
+        updateTransform();
+    }
+});
+
+photoContainer.addEventListener("touchend", () => {
+    isDragging = false;
+});
+
+function updateTransform() {
+    photo.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
+}
+
+function getDistance(touch1, touch2) {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
 }
