@@ -74,7 +74,7 @@
 
                             <!-- صورة الموظف -->
                             <div class="employee-photo-container">
-                                <img id="processedImage" style="display: none;" alt="صورة الموظف">
+                                <img id="processedImage" alt="صورة الموظف">
                                 <div class="photo-placeholder">
                                     <i class="fas fa-user"></i>
                                 </div>
@@ -125,5 +125,48 @@
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
     <script src="js/background-remover.js"></script>
     <script src="js/script.js"></script>
+    <script>
+        document.getElementById("downloadCard").addEventListener("click", function () {
+            const card = document.getElementById("cardExportArea");
+
+            html2canvas(card, {
+                useCORS: true,
+                backgroundColor: null,
+                scale: 4, // ✅ عشان نرفع الجودة
+                width: 1200,
+                height: 1200
+            }).then(canvas => {
+                const link = document.createElement("a");
+                link.download = "employee-card.png";
+                link.href = canvas.toDataURL("image/png", 1.0);
+                link.click();
+            });
+        });
+
+        document.getElementById("shareCard").addEventListener("click", function () {
+            const card = document.getElementById("cardExportArea");
+
+            html2canvas(card, {
+                useCORS: true,
+                backgroundColor: null,
+                scale: 4,
+                width: 1200,
+                height: 1200
+            }).then(canvas => {
+                canvas.toBlob(blob => {
+                    const file = new File([blob], "employee-card.png", { type: "image/png" });
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: "بطاقة موظف",
+                            text: "تم إنشاء البطاقة بنجاح"
+                        });
+                    } else {
+                        alert("المشاركة غير مدعومة على هذا الجهاز");
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>

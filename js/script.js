@@ -1,7 +1,7 @@
-// script.js (مُحدّث لاستخدام remove.bg API مع fallback محلي + تحميل البطاقة بجودة عالية + تحريك/تكبير الصورة)
+// script.js (نسخة مضبوطة بالكامل)
 
-// --------- إعدادات (ضع هنا مفتاحك الخاص) ----------
-const REMOVE_BG_API_KEY = 'VXz55xAL48D2xp4LL3EQhTYh'; // **احفظه سرياً**
+// --------- إعدادات API ----------
+const REMOVE_BG_API_KEY = 'VXz55xAL48D2xp4LL3EQhTYh'; 
 // ----------------------------------------------------
 
 let processedImageDataUrl = null;
@@ -13,7 +13,6 @@ const employeeNameInput = document.getElementById('employeeName');
 const jobTitleInput = document.getElementById('jobTitle');
 const phoneNumberInput = document.getElementById('phoneNumber');
 const employeeImageInput = document.getElementById('employeeImage');
-const generateCardBtn = document.getElementById('generateCard');
 const clearFormBtn = document.getElementById('clearForm');
 const downloadCardBtn = document.getElementById('downloadCard');
 const shareCardBtn = document.getElementById('shareCard');
@@ -27,9 +26,9 @@ const processedImage = document.getElementById('processedImage');
 const photoPlaceholder = document.querySelector('.photo-placeholder');
 
 // مستمعي الأحداث
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     initializeEventListeners();
-    updatePreviewInRealTime();
+    updatePreviewText();
 });
 
 function initializeEventListeners() {
@@ -46,14 +45,11 @@ function initializeEventListeners() {
     shareCardBtn.addEventListener('click', shareOnWhatsApp);
 }
 
+// تحديث النصوص في البطاقة
 function updatePreviewText() {
     cardEmployeeName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
     cardJobTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
     cardPhoneNumber.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
-}
-
-function updatePreviewInRealTime() {
-    updatePreviewText();
 }
 
 // معالجة رفع الصورة
@@ -75,7 +71,8 @@ async function handleImageUpload(event) {
         showLoading(true, 'جارِ معالجة الصورة...');
         const originalImageDataUrl = await readFileAsDataURL(file);
         const processedViaApi = await removeBackgroundWithAPI(originalImageDataUrl, file);
-        const finalDataUrl = processedViaApi || await processImageLocally(originalImageDataUrl);
+        const finalDataUrl = processedViaApi || originalImageDataUrl;
+
         displayProcessedImage(finalDataUrl);
         showNotification('تم معالجة الصورة بنجاح!', 'success');
     } catch (error) {
@@ -95,7 +92,7 @@ function readFileAsDataURL(file) {
     });
 }
 
-async function removeBackgroundWithAPI(imageDataUrl, originalFile) {
+async function removeBackgroundWithAPI(_, originalFile) {
     if (!REMOVE_BG_API_KEY) return null;
     try {
         const formData = new FormData();
@@ -129,25 +126,27 @@ function blobToDataURL(blob) {
     });
 }
 
-async function processImageLocally(imageDataUrl) {
-    return imageDataUrl;
-}
-
 function displayProcessedImage(dataUrl) {
     processedImageDataUrl = dataUrl;
     processedImage.src = dataUrl;
     processedImage.style.display = 'block';
     photoPlaceholder.style.display = 'none';
 
+    // ✅ تحديث البيانات والصورة فورًا
+    updatePreviewText();
+
+    // ✅ فعل أزرار التحميل والمشاركة
     downloadCardBtn.disabled = false;
     shareCardBtn.disabled = false;
-
-    updatePreviewText();
 }
 
+// عند إنشاء البطاقة
 async function handleFormSubmit(event) {
     event.preventDefault();
-    if (!validateForm()) return;
+    if (!validateForm()) {
+        showNotification('من فضلك املأ جميع البيانات وارفع صورة الموظف', 'error');
+        return;
+    }
 
     currentEmployeeData = {
         name: employeeNameInput.value.trim(),
@@ -156,15 +155,27 @@ async function handleFormSubmit(event) {
         image: processedImageDataUrl
     };
 
+    // ✅ تحديث البطاقة
+    updatePreviewText();
+    if (processedImageDataUrl) {
+        processedImage.src = processedImageDataUrl;
+        processedImage.style.display = "block";
+        photoPlaceholder.style.display = "none";
+    }
+
+    downloadCardBtn.disabled = false;
+    shareCardBtn.disabled = false;
+
     showNotification('تم إنشاء البطاقة بنجاح!', 'success');
 }
 
 function validateForm() {
-    if (!employeeNameInput.value.trim()) return false;
-    if (!jobTitleInput.value.trim()) return false;
-    if (!phoneNumberInput.value.trim()) return false;
-    if (!processedImageDataUrl) return false;
-    return true;
+    return (
+        employeeNameInput.value.trim() &&
+        jobTitleInput.value.trim() &&
+        phoneNumberInput.value.trim() &&
+        processedImageDataUrl
+    );
 }
 
 function handleClearForm() {
@@ -177,7 +188,7 @@ function handleClearForm() {
     shareCardBtn.disabled = true;
 }
 
-// --------- تحميل البطاقة مباشرة من العنصر بجودة عالية ---------
+// --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
     if (!cardElement) return;
@@ -187,50 +198,11 @@ async function downloadCard() {
     }
 
     try {
-        const photo = document.querySelector(".employee-photo-container img");
-        let originalTransform = null;
-
-        if (photo) {
-            // 🟢 احفظ الترانسفورم
-            originalTransform = photo.style.transform;
-
-            // خليه يتطبق على inline style مباشرة داخل نفس الكونتينر
-            const matrix = window.getComputedStyle(photo).transform;
-
-            if (matrix && matrix !== "none") {
-                // خزن كنسخة "أصلية"
-                photo.setAttribute("data-transform", originalTransform);
-
-                // شيل transform وخليه داخل clip-path بتاع الكونتينر (الدائرة)
-                const rect = photo.getBoundingClientRect();
-                const containerRect = photo.parentElement.getBoundingClientRect();
-
-                // نزّل الصورة بمكانها النسبي
-                photo.style.transform = "none";
-                photo.style.position = "absolute";
-                photo.style.left = (rect.left - containerRect.left) + "px";
-                photo.style.top = (rect.top - containerRect.top) + "px";
-                photo.style.width = rect.width + "px";
-                photo.style.height = rect.height + "px";
-            }
-        }
-
         const canvas = await html2canvas(cardElement, {
-            scale: 4,
+            scale: 4, // ✅ أعلى جودة
             useCORS: true,
-            logging: false,
             backgroundColor: null
         });
-
-        // رجع الصورة زي ما كانت
-        if (photo && originalTransform !== null) {
-            photo.style.transform = originalTransform;
-            photo.style.position = "";
-            photo.style.left = "";
-            photo.style.top = "";
-            photo.style.width = "";
-            photo.style.height = "";
-        }
 
         const dataUrl = canvas.toDataURL("image/png", 1.0);
         const link = document.createElement('a');
@@ -243,9 +215,7 @@ async function downloadCard() {
     }
 }
 
-
-// --------------------------------------------------------------
-
+// --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
     const cardElement = document.getElementById('cardExportArea');
 
@@ -253,7 +223,7 @@ async function shareOnWhatsApp() {
         await document.fonts.ready;
     }
 
-    const canvas = await html2canvas(cardElement, { scale: 3 });
+    const canvas = await html2canvas(cardElement, { scale: 4 });
     const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
 
     const file = new File([blob], "employee-card.png", { type: "image/png" });
@@ -273,7 +243,7 @@ async function shareOnWhatsApp() {
     }
 }
 
-// إشعارات
+// --------- إشعارات ---------
 function showNotification(message, type = 'info') {
     const notification = document.createElement('div');
     notification.className = `notification notification-${type}`;
@@ -298,25 +268,11 @@ function showNotification(message, type = 'info') {
         max-width: 380px;
         animation: slideIn 0.25s ease;
     `;
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    `;
-    document.head.appendChild(style);
     document.body.appendChild(notification);
 
     setTimeout(() => {
         notification.style.animation = 'slideOut 0.25s ease';
-        setTimeout(() => {
-            if (notification.parentNode) notification.parentNode.removeChild(notification);
-        }, 250);
+        setTimeout(() => notification.remove(), 250);
     }, 3500);
 }
 
@@ -348,16 +304,16 @@ function showLoading(show, message = '') {
     }
 }
 
-// ============ تحكم في صورة الموظف (سحب + تكبير/تصغير على الكمبيوتر والموبايل) ============
+// ============ تحكم في صورة الموظف (سحب + تكبير/تصغير) ============
 const photoContainer = document.querySelector(".employee-photo-container");
-const photo = photoContainer.querySelector("img");
+const photo = document.getElementById("processedImage");
 
 let isDragging = false;
 let startX, startY;
 let currentX = 0, currentY = 0;
 let scale = 1;
 
-// Mouse
+// Mouse events
 photoContainer.addEventListener("mousedown", (e) => {
     isDragging = true;
     startX = e.clientX - currentX;
@@ -385,7 +341,7 @@ photoContainer.addEventListener("wheel", (e) => {
     updateTransform();
 });
 
-// Touch (Mobile)
+// Touch events (Mobile)
 let initialDistance = 0;
 let initialScale = 1;
 
@@ -419,12 +375,13 @@ photoContainer.addEventListener("touchend", () => {
 });
 
 function updateTransform() {
-    const containerWidth = photoContainer.offsetWidth;
-    const containerHeight = photoContainer.offsetHeight;
-
-    // حوّل الإزاحة لـ نسب مئوية
-    const offsetXPercent = (currentX / containerWidth) * 100;
-    const offsetYPercent = (currentY / containerHeight) * 100;
-
-    photo.style.transform = `translate(${offsetXPercent}%, ${offsetYPercent}%) scale(${scale})`;
+    photo.style.transform = `translate(${currentX}px, ${currentY}px) scale(${scale})`;
 }
+
+function getDistance(touch1, touch2) {
+    return Math.hypot(
+        touch2.clientX - touch1.clientX,
+        touch2.clientY - touch1.clientY
+    );
+}
+
