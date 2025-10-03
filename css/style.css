@@ -182,7 +182,7 @@ body {
     border-radius: 0;
     overflow: hidden;
     font-family: 'Cairo', sans-serif;
-    padding: 30px;
+    padding: 15px;
 
     background: linear-gradient(90deg, #0d0d0d 0%, #1a1a1a 50%, #e53935 50%, #8e0e0e 100%);
     box-shadow: 0 12px 35px rgba(0,0,0,0.5);
