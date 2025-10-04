@@ -6,6 +6,7 @@
     <title>مولد بطاقات الموظفين - Kabbani Furniture</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.css">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -99,6 +100,10 @@
 
                     <!-- أزرار التحكم -->
                     <div class="card-actions">
+                        <button id="cropImage" disabled>
+                            <i class="fas fa-crop"></i>
+                            قص الصورة
+                        </button>
                         <button id="downloadCard" disabled>
                             <i class="fas fa-download"></i>
                             تحميل البطاقة
@@ -119,54 +124,34 @@
                 <p>جارِ معالجة الصورة...</p>
             </div>
         </div>
+
+        <!-- نافذة القص -->
+        <div class="modal-overlay" id="cropperModal" aria-hidden="true">
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cropperTitle">
+                <div class="modal-header">
+                    <h3 id="cropperTitle">قص الصورة</h3>
+                    <button class="modal-close" id="closeCropper" aria-label="إغلاق"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div class="cropper-wrapper">
+                        <img id="cropperImage" alt="Cropper Image">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button id="confirmCrop" class="btn-primary"><i class="fas fa-check"></i> تأكيد القص</button>
+                    <button id="cancelCrop" class="btn-secondary"><i class="fas fa-times"></i> إلغاء</button>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- المكتبة -->
+    <!-- المكتبات -->
     <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/cropperjs@1.6.2/dist/cropper.min.js"></script>
     <script src="js/background-remover.js"></script>
     <script src="js/script.js"></script>
     <script>
-        document.getElementById("downloadCard").addEventListener("click", function () {
-            const card = document.getElementById("cardExportArea");
-
-            html2canvas(card, {
-                useCORS: true,
-                backgroundColor: null,
-                scale: 4, // ✅ عشان نرفع الجودة
-                width: 1200,
-                height: 1200
-            }).then(canvas => {
-                const link = document.createElement("a");
-                link.download = "employee-card.png";
-                link.href = canvas.toDataURL("image/png", 1.0);
-                link.click();
-            });
-        });
-
-        document.getElementById("shareCard").addEventListener("click", function () {
-            const card = document.getElementById("cardExportArea");
-
-            html2canvas(card, {
-                useCORS: true,
-                backgroundColor: null,
-                scale: 4,
-                width: 1200,
-                height: 1200
-            }).then(canvas => {
-                canvas.toBlob(blob => {
-                    const file = new File([blob], "employee-card.png", { type: "image/png" });
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: "بطاقة موظف",
-                            text: "تم إنشاء البطاقة بنجاح"
-                        });
-                    } else {
-                        alert("المشاركة غير مدعومة على هذا الجهاز");
-                    }
-                });
-            });
-        });
+        // تم نقل منطق التحميل والمشاركة إلى js/script.js لتفادي التكرار
     </script>
 </body>
 </html>
