@@ -304,13 +304,17 @@ button:disabled {
 }
 
 #processedImage {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    border-radius: 50%;
     display: none;
     cursor: grab;
     transition: transform 0.2s ease-out;
 }
+
 
 .employee-info-center {
     position: absolute;

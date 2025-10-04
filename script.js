@@ -221,8 +221,6 @@ function handleClearForm() {
 }
 
 
-
-
 // --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
@@ -235,52 +233,49 @@ async function downloadCard() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
 
-        // ⚙️ احصل على العناصر
+        // 🧩 ثبّت الإطار والصورة مؤقتًا
         const container = cardElement.querySelector('.employee-photo-container');
         const image = cardElement.querySelector('#processedImage');
-
-        // 🧩 خزن القيم الأصلية
-        const originalTransform = container?.style.transform || '';
-        const originalWidth = container?.style.width || '';
-        const originalHeight = container?.style.height || '';
-
-        // 🧭 احصل على المقاسات الفعلية بالإحداثيات الحقيقية
-        const rect = container?.getBoundingClientRect();
         const cardRect = cardElement.getBoundingClientRect();
+        const rect = container.getBoundingClientRect();
 
-        if (rect && container) {
-            // ثبتها بالقيم الفعلية وقت الالتقاط
-            container.style.transform = 'none';
-            container.style.top = `${rect.top - cardRect.top}px`;
-            container.style.left = `${rect.left - cardRect.left}px`;
-            container.style.width = `${rect.width}px`;
-            container.style.height = `${rect.height}px`;
-        }
+        // حفظ القيم الأصلية
+        const originalStyle = {
+            position: container.style.position,
+            top: container.style.top,
+            left: container.style.left,
+            transform: container.style.transform,
+            width: container.style.width,
+            height: container.style.height,
+        };
 
+        // ✅ تثبيت الحاوية بالإحداثيات الفعلية
+        container.style.position = 'absolute';
+        container.style.transform = 'none';
+        container.style.top = `${rect.top - cardRect.top}px`;
+        container.style.left = `${rect.left - cardRect.left}px`;
+        container.style.width = `${rect.width}px`;
+        container.style.height = `${rect.height}px`;
+
+        // ✅ تأكد أن الصورة ممتدة بالكامل داخل الإطار
         if (image) {
             image.style.objectFit = 'cover';
             image.style.transform = 'none';
         }
 
-        // ✅ خذ اللقطة
+        // تصوير البطاقة
         const canvas = await html2canvas(cardElement, {
             scale: 4,
             useCORS: true,
             backgroundColor: null,
         });
 
-        // 🔄 رجّع القيم زي ما كانت
-        if (container) {
-            container.style.transform = originalTransform;
-            container.style.width = originalWidth;
-            container.style.height = originalHeight;
-            container.style.top = '50%';
-            container.style.left = '50%';
-        }
+        // 🔄 رجّع القيم الأصلية
+        Object.assign(container.style, originalStyle);
 
         showLoading(false);
 
-        // 🖼️ احفظ الصورة
+        // تحميل الصورة
         const dataUrl = canvas.toDataURL('image/png', 1.0);
         const safeName = (employeeNameInput.value.trim() || 'موظف')
             .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
@@ -305,10 +300,7 @@ async function downloadCard() {
 // --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
     const cardElement = document.getElementById('cardExportArea');
-    if (!cardElement) {
-        showNotification('لم يتم العثور على البطاقة', 'error');
-        return;
-    }
+    if (!cardElement) return;
 
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
@@ -317,17 +309,46 @@ async function shareOnWhatsApp() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
 
-        // ✅ التقاط العنصر الفعلي في الصفحة (بدون نسخة)
+        // 🧩 ثبّت الإطار والصورة مؤقتًا
+        const container = cardElement.querySelector('.employee-photo-container');
+        const image = cardElement.querySelector('#processedImage');
+        const cardRect = cardElement.getBoundingClientRect();
+        const rect = container.getBoundingClientRect();
+
+        // حفظ القيم الأصلية
+        const originalStyle = {
+            position: container.style.position,
+            top: container.style.top,
+            left: container.style.left,
+            transform: container.style.transform,
+            width: container.style.width,
+            height: container.style.height,
+        };
+
+        // ✅ تثبيت الحاوية بالإحداثيات الفعلية
+        container.style.position = 'absolute';
+        container.style.transform = 'none';
+        container.style.top = `${rect.top - cardRect.top}px`;
+        container.style.left = `${rect.left - cardRect.left}px`;
+        container.style.width = `${rect.width}px`;
+        container.style.height = `${rect.height}px`;
+
+        if (image) {
+            image.style.objectFit = 'cover';
+            image.style.transform = 'none';
+        }
+
+        // تصوير البطاقة
         const canvas = await html2canvas(cardElement, {
             scale: 4,
             useCORS: true,
             backgroundColor: null,
         });
 
-        const blob = await new Promise(resolve =>
-            canvas.toBlob(resolve, 'image/png', 1.0)
-        );
+        // 🔄 رجّع القيم الأصلية
+        Object.assign(container.style, originalStyle);
 
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
         const safeName = (employeeNameInput.value.trim() || 'موظف')
             .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
         const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
@@ -335,27 +356,12 @@ async function shareOnWhatsApp() {
         showLoading(false);
 
         if (navigator.share) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: 'بطاقة موظف',
-                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`,
-                });
-                showNotification('تم مشاركة البطاقة بنجاح!', 'success');
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('خطأ في المشاركة:', err);
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `بطاقة_${safeName}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    showNotification('تم تحميل البطاقة عوضًا عن المشاركة', 'success');
-                }
-            }
+            await navigator.share({
+                files: [file],
+                title: 'بطاقة موظف',
+                text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`,
+            });
+            showNotification('تم مشاركة البطاقة بنجاح!', 'success');
         } else {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
@@ -369,15 +375,18 @@ async function shareOnWhatsApp() {
             const whatsappText = `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`;
             const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
             window.open(whatsappUrl, '_blank');
-
             showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
         }
+
     } catch (error) {
         console.error('خطأ أثناء مشاركة البطاقة:', error);
         showLoading(false);
         showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
     }
 }
+
+
+
 
 
 
