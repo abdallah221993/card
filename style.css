@@ -387,70 +387,154 @@ button:disabled {
     }
 }
 
-/* Cropper modal */
+/* Cropper modal - محسّن للعمل على جميع الشاشات */
 .cropper-modal {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.7);
+    background: rgba(15, 23, 42, 0.85);
     display: none;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding: clamp(12px, 2vw, 24px);
     z-index: 1100;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
 }
 
 .cropper-modal.show {
     display: flex;
+    animation: fadeIn 0.3s ease-out;
 }
 
 .cropper-dialog {
     background: #fff;
-    border-radius: 20px;
-    max-width: min(90vw, 680px);
+    border-radius: clamp(12px, 2vw, 20px);
+    max-width: min(95vw, 800px);
     width: 100%;
-    padding: clamp(20px, 4vw, 32px);
+    max-height: min(90vh, 600px);
+    padding: clamp(16px, 3vw, 24px);
     position: relative;
     display: flex;
     flex-direction: column;
-    gap: 18px;
+    gap: clamp(12px, 2vw, 18px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    transform: scale(0.9);
+    animation: modalSlideIn 0.3s ease-out forwards;
+}
+
+@keyframes modalSlideIn {
+    to {
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 .cropper-dialog h3 {
     text-align: center;
-    font-size: 1.3rem;
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
     color: var(--accent-color);
+    margin: 0;
+    padding: 0;
 }
 
 .close-cropper {
     position: absolute;
-    top: 16px;
-    left: 16px;
-    background: rgba(0, 0, 0, 0.05);
+    top: clamp(12px, 2vw, 16px);
+    left: clamp(12px, 2vw, 16px);
+    background: rgba(239, 68, 68, 0.1);
+    border: none;
     border-radius: 50%;
-    width: 36px;
-    height: 36px;
+    width: clamp(32px, 6vw, 40px);
+    height: clamp(32px, 6vw, 40px);
     display: grid;
     place-items: center;
-    color: #111827;
+    color: #ef4444;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: clamp(14px, 3vw, 18px);
+}
+
+.close-cropper:hover {
+    background: rgba(239, 68, 68, 0.2);
+    transform: scale(1.1);
 }
 
 .cropper-body {
-    min-height: clamp(240px, 40vh, 420px);
-    background: #f3f4f6;
-    border-radius: 16px;
+    height: clamp(300px, 50vh, 450px);
+    background: #f8fafc;
+    border-radius: clamp(8px, 2vw, 12px);
     overflow: hidden;
+    border: 2px solid #e2e8f0;
+    position: relative;
 }
 
 .cropper-body img {
     max-width: 100%;
+    max-height: 100%;
     display: block;
+    margin: 0 auto;
+}
+
+/* تحسين عرض Cropper.js */
+.cropper-container {
+    direction: ltr !important;
+}
+
+.cropper-view-box,
+.cropper-face {
+    border-radius: 50% !important;
 }
 
 .cropper-actions {
     display: flex;
     justify-content: center;
-    gap: 14px;
+    gap: clamp(10px, 2vw, 16px);
     flex-wrap: wrap;
+    padding-top: clamp(8px, 1.5vw, 12px);
+}
+
+.cropper-actions button {
+    min-width: clamp(100px, 20vw, 140px);
+    padding: clamp(10px, 2vw, 14px) clamp(16px, 3vw, 24px);
+    font-size: clamp(0.9rem, 2vw, 1rem);
+}
+
+/* تحسينات للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .cropper-modal {
+        padding: 8px;
+    }
+    
+    .cropper-dialog {
+        max-height: 95vh;
+        margin: auto;
+    }
+    
+    .cropper-body {
+        height: clamp(250px, 40vh, 350px);
+    }
+    
+    .cropper-actions {
+        flex-direction: column;
+    }
+    
+    .cropper-actions button {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+/* إصلاح مشاكل RTL مع Cropper */
+.cropper-container {
+    direction: ltr;
+}
+
+.cropper-modal .cropper-container {
+    font-family: 'Cairo', sans-serif;
 }
 
 /* Notifications */

@@ -58,6 +58,21 @@ function initializeEventListeners() {
     confirmCropBtn.addEventListener('click', confirmCrop);
     cancelCropBtn.addEventListener('click', closeCropper);
     closeCropperBtn.addEventListener('click', closeCropper);
+    
+    // تحسين تجربة نافذة القص - إغلاق بالنقر خارج النافذة
+    cropperModal.addEventListener('click', (e) => {
+        if (e.target === cropperModal) {
+            closeCropper();
+        }
+    });
+    
+    // منع إغلاق النافذة عند النقر داخل محتوى النافذة
+    const cropperDialog = cropperModal.querySelector('.cropper-dialog');
+    if (cropperDialog) {
+        cropperDialog.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+    }
 }
 
 // تحديث النصوص في البطاقة
@@ -215,103 +230,254 @@ async function downloadCard() {
     }
 
     try {
+        showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
+        
         // ✅ اعمل نسخة جديدة من البطاقة
         const clone = exportRoot.cloneNode(true);
         clone.id = "cardExportClone";
-
-        // عالج صورة الموظف في النسخة (خليها ثابتة)
+        
+        // إضافة ستايل للنسخة لضمان عرضها بشكل صحيح
+        clone.style.position = 'absolute';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        clone.style.zIndex = '-1';
+        clone.style.width = '600px';
+        clone.style.height = '600px';
+        clone.style.visibility = 'visible';
+        
+        // عالج صورة الموظف في النسخة (إزالة جميع التحولات وإعادة تعيين الموضع)
         const cloneImage = clone.querySelector("#processedImage");
+        const cloneContainer = clone.querySelector(".employee-photo-container");
+        
         if (cloneImage && processedImageDataUrl) {
             cloneImage.src = processedImageDataUrl;
             cloneImage.style.display = "block";
             cloneImage.style.width = "100%";
             cloneImage.style.height = "100%";
             cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none"; // لا سحب ولا تكبير
+            cloneImage.style.transform = "none"; // إزالة جميع التحولات
+            cloneImage.style.position = "static";
+            cloneImage.style.left = "auto";
+            cloneImage.style.top = "auto";
+            cloneImage.style.cursor = "default";
         }
+        
+        // إزالة أحداث التحكم من الحاوية
+        if (cloneContainer) {
+            cloneContainer.style.cursor = "default";
+            cloneContainer.style.userSelect = "none";
+            cloneContainer.style.pointerEvents = "none";
+        }
+        
+        // عالج النصوص - تأكد من أنها تظهر بالبيانات الحالية
+        const cloneName = clone.querySelector('#cardEmployeeName');
+        const cloneTitle = clone.querySelector('#cardJobTitle');
+        const clonePhone = clone.querySelector('#cardPhoneNumber');
+        
+        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
+        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
+        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
 
         document.body.appendChild(clone);
+        
+        // انتظار قليل لضمان تحميل الصورة
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // صور النسخة بـ html2canvas
         const canvas = await html2canvas(clone, {
-            scale: 4,
+            scale: 3,
             useCORS: true,
-            backgroundColor: null
+            allowTaint: false,
+            backgroundColor: null,
+            width: 600,
+            height: 600,
+            scrollX: 0,
+            scrollY: 0
         });
 
         // احذف النسخة بعد التصوير
         document.body.removeChild(clone);
+        
+        showLoading(false);
 
-        // حفظ البطاقة
+        // حفظ البطاقة مع تحسين التوافق مع المتصفحات
         const dataUrl = canvas.toDataURL('image/png', 1.0);
-        const link = document.createElement('a');
-        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/\s+/g, '_');
-        link.download = `بطاقة_${safeName}.png`;
-        link.href = dataUrl;
-        link.click();
+        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        
+        // طريقة محسنة للتحميل تعمل على جميع المتصفحات
+        try {
+            // استخدام Blob API للتوافق الأفضل
+            const response = await fetch(dataUrl);
+            const blob = await response.blob();
+            
+            if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                // للموبايل - استخدام Web Share API إذا متوفر
+                const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
+                await navigator.share({
+                    files: [file],
+                    title: 'بطاقة موظف',
+                    text: 'بطاقة الموظف جاهزة'
+                });
+            } else {
+                // للكمبيوتر والموبايل - التحميل التقليدي
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `بطاقة_${safeName}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+            
+            showNotification('تم تحميل البطاقة بنجاح!', 'success');
+        } catch (shareError) {
+            console.error('فشل في المشاركة، سيتم التحميل العادي:', shareError);
+            // إذا فشلت المشاركة، استخدم التحميل العادي
+            const link = document.createElement('a');
+            link.download = `بطاقة_${safeName}.png`;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showNotification('تم تحميل البطاقة بنجاح!', 'success');
+        }
 
     } catch (error) {
         console.error('خطأ أثناء توليد الصورة:', error);
+        showLoading(false);
+        showNotification('حدث خطأ أثناء تحميل البطاقة. حاول مرة أخرى.', 'error');
     }
 }
 
 
-// --------- نافذة القص ---------
+// --------- نافذة القص المحسّنة ---------
 function openCropper() {
     if (!processedImageDataUrl) {
         showNotification('من فضلك ارفع صورة أولاً لقصّها', 'warning');
         return;
     }
+    
+    // عرض النافذة مع تأثير انيميشن
     cropperModal.classList.add('show');
     cropperModal.setAttribute('aria-hidden', 'false');
-    // تهيئة الصورة للمحرر
+    document.body.style.overflow = 'hidden'; // منع التمرير في الخلفية
+    
+    // تهيئة الصورة للمحرر مع تحسينات
     cropperImage.onload = () => {
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(cropperImage, {
-            aspectRatio: 1,
-            viewMode: 2,
-            background: false,
-            autoCropArea: 1,
-            movable: true,
-            zoomable: true,
-            rotatable: false,
-            scalable: false,
-            responsive: true,
-        });
+        // تنظيف المحرر السابق إن وجد
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+        
+        // انتظار قصير لضمان عرض الصورة
+        setTimeout(() => {
+            cropper = new Cropper(cropperImage, {
+                aspectRatio: 1, // نسبة 1:1 للدائرة
+                viewMode: 1, // تقييد منطقة القص داخل الاطار
+                background: false, // إزالة الخلفية الشطرنجية
+                autoCropArea: 0.8, // منطقة القص الافتراضية
+                movable: true, // يمكن تحريك الصورة
+                zoomable: true, // يمكن التكبير/التصغير
+                rotatable: true, // يمكن الدوران
+                scalable: true, // يمكن التمديد
+                responsive: true, // يتجاوب مع تغيير حجم النافذة
+                checkCrossOrigin: false,
+                checkOrientation: false,
+                modal: true, // عرض القناع فوق الصورة
+                guides: true, // عرض الخطوط المرشدة
+                center: true, // عرض مركز القص
+                highlight: false, // إزالة تمييز منطقة القص
+                cropBoxMovable: true, // يمكن تحريك صندوق القص
+                cropBoxResizable: true, // يمكن تغيير حجم صندوق القص
+                toggleDragModeOnDblclick: false,
+                ready() {
+                    // تطبيق زر CSS لجعل منطقة القص دائرية
+                    const viewBox = cropperModal.querySelector('.cropper-view-box');
+                    const face = cropperModal.querySelector('.cropper-face');
+                    if (viewBox) viewBox.style.borderRadius = '50%';
+                    if (face) face.style.borderRadius = '50%';
+                }
+            });
+        }, 100);
     };
+    
+    cropperImage.onerror = () => {
+        showNotification('فشل في تحميل الصورة للقص', 'error');
+        closeCropper();
+    };
+    
     cropperImage.src = processedImageDataUrl;
 }
 
 function closeCropper() {
+    // تنظيف المحرر
     if (cropper) {
         cropper.destroy();
         cropper = null;
     }
+    
+    // إغلاق النافذة مع تأثير
     cropperModal.classList.remove('show');
     cropperModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = ''; // إعادة التمرير
+    
+    // مسح مصدر الصورة لتوفير الذاكرة
+    cropperImage.src = '';
 }
 
 async function confirmCrop() {
-    if (!cropper) return;
+    if (!cropper) {
+        showNotification('لم يتم العثور على محرر الصور', 'error');
+        return;
+    }
+    
     try {
+        showLoading(true, 'جارِ قص الصورة...');
+        
+        // الحصول على الصورة المقصوصة بجودة عالية
         const canvas = cropper.getCroppedCanvas({
-            width: 1024,
-            height: 1024,
+            width: 1200, // حجم أكبر لجودة أفضل
+            height: 1200,
+            minWidth: 400, // حد أدنى للجودة
+            minHeight: 400,
+            maxWidth: 2048, // حد أقصى لمنع مشاكل الذاكرة
+            maxHeight: 2048,
+            fillColor: '#ffffff', // خلفية بيضاء للمناطق الشفافة
             imageSmoothingEnabled: true,
             imageSmoothingQuality: 'high'
         });
+        
+        if (!canvas) {
+            throw new Error('فشل في إنشاء الصورة المقصوصة');
+        }
+        
+        // تحويل إلى Data URL بجودة عالية
         const dataUrl = canvas.toDataURL('image/png', 1.0);
+        
+        // تحديث الصورة المعالجة
         processedImageDataUrl = dataUrl;
         processedImage.src = dataUrl;
-        // إعادة تمركز الصورة بعد القص
-        currentX = 0; currentY = 0; scale = 1; updateTransform();
+        
+        // إعادة تعيين موضع وحجم الصورة في البطاقة
+        currentX = 0; 
+        currentY = 0; 
+        scale = 1; 
+        updateTransform();
+        
+        // تفعيل الأزرار
         downloadCardBtn.disabled = false;
         shareCardBtn.disabled = false;
         if (cropImageBtn) cropImageBtn.disabled = false;
-        showNotification('تم قص الصورة بنجاح', 'success');
-    } catch (e) {
-        console.error(e);
-        showNotification('حدث خطأ أثناء القص', 'error');
+        
+        showLoading(false);
+        showNotification('تم قص الصورة بنجاح ✨', 'success');
+        
+    } catch (error) {
+        console.error('خطأ في قص الصورة:', error);
+        showLoading(false);
+        showNotification('حدث خطأ أثناء قص الصورة. حاول مرة أخرى.', 'error');
     } finally {
         closeCropper();
     }
@@ -319,42 +485,128 @@ async function confirmCrop() {
 
 // إغلاق بالضغط على Escape
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' && cropperModal.classList.contains('show')) {
         closeCropper();
     }
 });
 
 // --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
-    const exportRoot = document.getElementById('cardExportArea');
-
-    if (document.fonts && document.fonts.ready) {
-        await document.fonts.ready;
-    }
-
-    // ضمان إزالة الطبقات المؤثرة قبل الالتقاط
-    exportRoot.classList.add('exporting');
-    await new Promise(r => requestAnimationFrame(r));
-
-    const canvas = await html2canvas(exportRoot, { scale: 4, useCORS: true, backgroundColor: null });
-    exportRoot.classList.remove('exporting');
-
-    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-
-    const file = new File([blob], 'employee-card.png', { type: 'image/png' });
-
-    if (navigator.share) {
-        try {
-            await navigator.share({
-                files: [file],
-                title: 'بطاقة موظف',
-                text: 'شوف بطاقة الموظف'
-            });
-        } catch (err) {
-            console.error('خطأ في المشاركة:', err);
+    try {
+        showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
+        
+        const exportRoot = document.getElementById('cardExportArea');
+        if (!exportRoot) {
+            showNotification('خطأ في العثور على البطاقة', 'error');
+            return;
         }
-    } else {
-        alert('المشاركة بالصور مش مدعومة على هذا المتصفح.');
+
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+        
+        // اعمل نسخة مثل دالة التحميل لضمان الثبات
+        const clone = exportRoot.cloneNode(true);
+        clone.id = "cardShareClone";
+        
+        clone.style.position = 'absolute';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        clone.style.zIndex = '-1';
+        clone.style.width = '600px';
+        clone.style.height = '600px';
+        clone.style.visibility = 'visible';
+        
+        const cloneImage = clone.querySelector("#processedImage");
+        const cloneContainer = clone.querySelector(".employee-photo-container");
+        
+        if (cloneImage && processedImageDataUrl) {
+            cloneImage.src = processedImageDataUrl;
+            cloneImage.style.display = "block";
+            cloneImage.style.width = "100%";
+            cloneImage.style.height = "100%";
+            cloneImage.style.objectFit = "cover";
+            cloneImage.style.transform = "none";
+            cloneImage.style.position = "static";
+            cloneImage.style.cursor = "default";
+        }
+        
+        if (cloneContainer) {
+            cloneContainer.style.cursor = "default";
+            cloneContainer.style.pointerEvents = "none";
+        }
+        
+        const cloneName = clone.querySelector('#cardEmployeeName');
+        const cloneTitle = clone.querySelector('#cardJobTitle');
+        const clonePhone = clone.querySelector('#cardPhoneNumber');
+        
+        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
+        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
+        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
+
+        document.body.appendChild(clone);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = await html2canvas(clone, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: null,
+            width: 600,
+            height: 600
+        });
+        
+        document.body.removeChild(clone);
+        showLoading(false);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'بطاقة موظف',
+                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`
+                });
+                showNotification('تم مشاركة البطاقة بنجاح!', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('خطأ في المشاركة:', err);
+                    // فال باك للتحميل
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `بطاقة_${safeName}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    showNotification('تم تحميل البطاقة عوضًا عن المشاركة', 'success');
+                }
+            }
+        } else {
+            // إذا لم تكن المشاركة متوفرة، قم بالتحميل واعطي رابط واتساب
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `بطاقة_${safeName}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            const whatsappText = `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+            window.open(whatsappUrl, '_blank');
+            
+            showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
+        }
+        
+    } catch (error) {
+        console.error('خطأ في مشاركة البطاقة:', error);
+        showLoading(false);
+        showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
     }
 }
 
