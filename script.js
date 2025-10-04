@@ -220,6 +220,7 @@ function handleClearForm() {
     if (cropImageBtn) cropImageBtn.disabled = true;
 }
 
+
 // --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
     const exportRoot = document.getElementById('cardExportArea');
@@ -236,7 +237,7 @@ async function downloadCard() {
         const clone = exportRoot.cloneNode(true);
         clone.id = "cardExportClone";
         
-        // إضافة ستايل للنسخة لضمان عرضها بشكل صحيح
+        // إعداد النسخة المخفية
         clone.style.position = 'absolute';
         clone.style.left = '-9999px';
         clone.style.top = '0';
@@ -245,31 +246,36 @@ async function downloadCard() {
         clone.style.height = '600px';
         clone.style.visibility = 'visible';
         
-        // عالج صورة الموظف في النسخة (إزالة جميع التحولات وإعادة تعيين الموضع)
+        // عالج صورة الموظف والحاوية لضمان الثبات أثناء التصوير
         const cloneImage = clone.querySelector("#processedImage");
         const cloneContainer = clone.querySelector(".employee-photo-container");
-        
+
         if (cloneImage && processedImageDataUrl) {
             cloneImage.src = processedImageDataUrl;
             cloneImage.style.display = "block";
             cloneImage.style.width = "100%";
             cloneImage.style.height = "100%";
             cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none"; // إزالة جميع التحولات
-            cloneImage.style.position = "static";
-            cloneImage.style.left = "auto";
-            cloneImage.style.top = "auto";
+            cloneImage.style.transform = "none";
+            cloneImage.style.position = "absolute";
+            cloneImage.style.left = "0";
+            cloneImage.style.top = "0";
             cloneImage.style.cursor = "default";
+            cloneImage.style.zIndex = "2";
         }
-        
-        // إزالة أحداث التحكم من الحاوية
+
         if (cloneContainer) {
+            cloneContainer.style.position = "absolute";
+            cloneContainer.style.top = "50%";
+            cloneContainer.style.left = "50%";
+            cloneContainer.style.transform = "translate(-50%, -50%)";
             cloneContainer.style.cursor = "default";
             cloneContainer.style.userSelect = "none";
             cloneContainer.style.pointerEvents = "none";
+            cloneContainer.style.zIndex = "1";
         }
         
-        // عالج النصوص - تأكد من أنها تظهر بالبيانات الحالية
+        // تحديث النصوص
         const cloneName = clone.querySelector('#cardEmployeeName');
         const cloneTitle = clone.querySelector('#cardJobTitle');
         const clonePhone = clone.querySelector('#cardPhoneNumber');
@@ -279,11 +285,8 @@ async function downloadCard() {
         if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
 
         document.body.appendChild(clone);
-        
-        // انتظار قليل لضمان تحميل الصورة
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        // صور النسخة بـ html2canvas
         const canvas = await html2canvas(clone, {
             scale: 3,
             useCORS: true,
@@ -295,23 +298,17 @@ async function downloadCard() {
             scrollY: 0
         });
 
-        // احذف النسخة بعد التصوير
         document.body.removeChild(clone);
-        
         showLoading(false);
 
-        // حفظ البطاقة مع تحسين التوافق مع المتصفحات
         const dataUrl = canvas.toDataURL('image/png', 1.0);
         const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
-        
-        // طريقة محسنة للتحميل تعمل على جميع المتصفحات
+
         try {
-            // استخدام Blob API للتوافق الأفضل
             const response = await fetch(dataUrl);
             const blob = await response.blob();
-            
+
             if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                // للموبايل - استخدام Web Share API إذا متوفر
                 const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
                 await navigator.share({
                     files: [file],
@@ -319,7 +316,6 @@ async function downloadCard() {
                     text: 'بطاقة الموظف جاهزة'
                 });
             } else {
-                // للكمبيوتر والموبايل - التحميل التقليدي
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
@@ -329,11 +325,10 @@ async function downloadCard() {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(url);
             }
-            
+
             showNotification('تم تحميل البطاقة بنجاح!', 'success');
         } catch (shareError) {
             console.error('فشل في المشاركة، سيتم التحميل العادي:', shareError);
-            // إذا فشلت المشاركة، استخدم التحميل العادي
             const link = document.createElement('a');
             link.download = `بطاقة_${safeName}.png`;
             link.href = dataUrl;
@@ -349,6 +344,134 @@ async function downloadCard() {
         showNotification('حدث خطأ أثناء تحميل البطاقة. حاول مرة أخرى.', 'error');
     }
 }
+
+
+// --------- مشاركة على واتساب ---------
+async function shareOnWhatsApp() {
+    try {
+        showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
+        
+        const exportRoot = document.getElementById('cardExportArea');
+        if (!exportRoot) {
+            showNotification('خطأ في العثور على البطاقة', 'error');
+            return;
+        }
+
+        if (document.fonts && document.fonts.ready) {
+            await document.fonts.ready;
+        }
+
+        const clone = exportRoot.cloneNode(true);
+        clone.id = "cardShareClone";
+
+        clone.style.position = 'absolute';
+        clone.style.left = '-9999px';
+        clone.style.top = '0';
+        clone.style.zIndex = '-1';
+        clone.style.width = '600px';
+        clone.style.height = '600px';
+        clone.style.visibility = 'visible';
+        
+        const cloneImage = clone.querySelector("#processedImage");
+        const cloneContainer = clone.querySelector(".employee-photo-container");
+
+        if (cloneImage && processedImageDataUrl) {
+            cloneImage.src = processedImageDataUrl;
+            cloneImage.style.display = "block";
+            cloneImage.style.width = "100%";
+            cloneImage.style.height = "100%";
+            cloneImage.style.objectFit = "cover";
+            cloneImage.style.transform = "none";
+            cloneImage.style.position = "absolute";
+            cloneImage.style.left = "0";
+            cloneImage.style.top = "0";
+            cloneImage.style.cursor = "default";
+            cloneImage.style.zIndex = "2";
+        }
+
+        if (cloneContainer) {
+            cloneContainer.style.position = "absolute";
+            cloneContainer.style.top = "50%";
+            cloneContainer.style.left = "50%";
+            cloneContainer.style.transform = "translate(-50%, -50%)";
+            cloneContainer.style.cursor = "default";
+            cloneContainer.style.userSelect = "none";
+            cloneContainer.style.pointerEvents = "none";
+            cloneContainer.style.zIndex = "1";
+        }
+
+        const cloneName = clone.querySelector('#cardEmployeeName');
+        const cloneTitle = clone.querySelector('#cardJobTitle');
+        const clonePhone = clone.querySelector('#cardPhoneNumber');
+
+        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
+        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
+        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
+
+        document.body.appendChild(clone);
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = await html2canvas(clone, {
+            scale: 3,
+            useCORS: true,
+            backgroundColor: null,
+            width: 600,
+            height: 600
+        });
+
+        document.body.removeChild(clone);
+        showLoading(false);
+
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
+
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'بطاقة موظف',
+                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`
+                });
+                showNotification('تم مشاركة البطاقة بنجاح!', 'success');
+            } catch (err) {
+                if (err.name !== 'AbortError') {
+                    console.error('خطأ في المشاركة:', err);
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `بطاقة_${safeName}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    showNotification('تم تحميل البطاقة عوضًا عن المشاركة', 'success');
+                }
+            }
+        } else {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `بطاقة_${safeName}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            const whatsappText = `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`;
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
+            window.open(whatsappUrl, '_blank');
+            
+            showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
+        }
+
+    } catch (error) {
+        console.error('خطأ في مشاركة البطاقة:', error);
+        showLoading(false);
+        showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
+    }
+}
+
 
 
 // --------- نافذة القص المحسّنة ---------
@@ -490,125 +613,6 @@ window.addEventListener('keydown', (e) => {
     }
 });
 
-// --------- مشاركة على واتساب ---------
-async function shareOnWhatsApp() {
-    try {
-        showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
-        
-        const exportRoot = document.getElementById('cardExportArea');
-        if (!exportRoot) {
-            showNotification('خطأ في العثور على البطاقة', 'error');
-            return;
-        }
-
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
-        
-        // اعمل نسخة مثل دالة التحميل لضمان الثبات
-        const clone = exportRoot.cloneNode(true);
-        clone.id = "cardShareClone";
-        
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        clone.style.zIndex = '-1';
-        clone.style.width = '600px';
-        clone.style.height = '600px';
-        clone.style.visibility = 'visible';
-        
-        const cloneImage = clone.querySelector("#processedImage");
-        const cloneContainer = clone.querySelector(".employee-photo-container");
-        
-        if (cloneImage && processedImageDataUrl) {
-            cloneImage.src = processedImageDataUrl;
-            cloneImage.style.display = "block";
-            cloneImage.style.width = "100%";
-            cloneImage.style.height = "100%";
-            cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none";
-            cloneImage.style.position = "static";
-            cloneImage.style.cursor = "default";
-        }
-        
-        if (cloneContainer) {
-            cloneContainer.style.cursor = "default";
-            cloneContainer.style.pointerEvents = "none";
-        }
-        
-        const cloneName = clone.querySelector('#cardEmployeeName');
-        const cloneTitle = clone.querySelector('#cardJobTitle');
-        const clonePhone = clone.querySelector('#cardPhoneNumber');
-        
-        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
-        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
-        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
-
-        document.body.appendChild(clone);
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-        const canvas = await html2canvas(clone, {
-            scale: 3,
-            useCORS: true,
-            backgroundColor: null,
-            width: 600,
-            height: 600
-        });
-        
-        document.body.removeChild(clone);
-        showLoading(false);
-
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
-        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
-        const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: 'بطاقة موظف',
-                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`
-                });
-                showNotification('تم مشاركة البطاقة بنجاح!', 'success');
-            } catch (err) {
-                if (err.name !== 'AbortError') {
-                    console.error('خطأ في المشاركة:', err);
-                    // فال باك للتحميل
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `بطاقة_${safeName}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                    showNotification('تم تحميل البطاقة عوضًا عن المشاركة', 'success');
-                }
-            }
-        } else {
-            // إذا لم تكن المشاركة متوفرة، قم بالتحميل واعطي رابط واتساب
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `بطاقة_${safeName}.png`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-            
-            const whatsappText = `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`;
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
-            window.open(whatsappUrl, '_blank');
-            
-            showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
-        }
-        
-    } catch (error) {
-        console.error('خطأ في مشاركة البطاقة:', error);
-        showLoading(false);
-        showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
-    }
-}
 
 // --------- إشعارات ---------
 function showNotification(message, type = 'info') {
