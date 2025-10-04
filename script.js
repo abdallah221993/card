@@ -215,6 +215,10 @@ async function downloadCard() {
     }
 
     try {
+        // ✅ احفظ transform الحالي للصورة
+        const oldTransform = processedImage.style.transform;
+        processedImage.style.transform = "none"; // رجع الصورة للوضع الأصلي قبل الالتقاط
+
         // إخفاء أي طبقات قد تُسبب تغميق الصورة أثناء الالتقاط
         exportRoot.classList.add('exporting');
         await new Promise(r => requestAnimationFrame(r));
@@ -226,6 +230,9 @@ async function downloadCard() {
         });
 
         exportRoot.classList.remove('exporting');
+
+        // ✅ رجع transform القديم
+        processedImage.style.transform = oldTransform;
 
         const dataUrl = canvas.toDataURL('image/png', 1.0);
         const link = document.createElement('a');
