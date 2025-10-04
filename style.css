@@ -240,7 +240,7 @@ button:disabled {
     position: relative;
     width: min(90vw, 480px);
     aspect-ratio: 1 / 1;
-    border-radius: 32px;
+    border-radius: 0; /* ❌ كانت 32px */
     overflow: hidden;
     box-shadow: var(--card-shadow);
     background: url('images/template-bg.jpg') center / cover no-repeat;
