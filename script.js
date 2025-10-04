@@ -221,10 +221,11 @@ function handleClearForm() {
 }
 
 
+
 // --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
-    const exportRoot = document.getElementById('cardExportArea');
-    if (!exportRoot) return;
+    const cardElement = document.getElementById('cardExportArea');
+    if (!cardElement) return;
 
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
@@ -233,119 +234,28 @@ async function downloadCard() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
 
-        // ✅ اعمل نسخة جديدة من البطاقة
-        const clone = exportRoot.cloneNode(true);
-        clone.id = "cardExportClone";
-
-        // إعداد النسخة المخفية
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        clone.style.zIndex = '-1';
-        clone.style.width = '600px';
-        clone.style.height = '600px';
-        clone.style.visibility = 'visible';
-
-        // ثبّت الحاوية والإطار والصورة يدويًا لتفادي الحركة
-        const cloneContainer = clone.querySelector(".employee-photo-container");
-        const cloneImage = clone.querySelector("#processedImage");
-
-        if (cloneContainer) {
-            cloneContainer.style.position = "absolute";
-            cloneContainer.style.top = "50%";
-            cloneContainer.style.left = "50%";
-            cloneContainer.style.width = "360px";
-            cloneContainer.style.height = "360px";
-            cloneContainer.style.transform = "translate(-50%, -50%)";
-            cloneContainer.style.borderRadius = "50%";
-            cloneContainer.style.overflow = "hidden";
-            cloneContainer.style.border = "3px solid #8e1d1d";
-            cloneContainer.style.display = "flex";
-            cloneContainer.style.alignItems = "center";
-            cloneContainer.style.justifyContent = "center";
-            cloneContainer.style.background = "#d9d9d9";
-            cloneContainer.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.35)";
-            cloneContainer.style.cursor = "default";
-            cloneContainer.style.userSelect = "none";
-            cloneContainer.style.pointerEvents = "none";
-        }
-
-        if (cloneImage && processedImageDataUrl) {
-            cloneImage.src = processedImageDataUrl;
-            cloneImage.style.display = "block";
-            cloneImage.style.position = "absolute";
-            cloneImage.style.inset = "0";
-            cloneImage.style.width = "100%";
-            cloneImage.style.height = "100%";
-            cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none";
-            cloneImage.style.cursor = "default";
-            cloneImage.style.zIndex = "2";
-        }
-
-        // تحديث النصوص
-        const cloneName = clone.querySelector('#cardEmployeeName');
-        const cloneTitle = clone.querySelector('#cardJobTitle');
-        const clonePhone = clone.querySelector('#cardPhoneNumber');
-
-        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
-        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
-        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
-
-        document.body.appendChild(clone);
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        const canvas = await html2canvas(clone, {
-            scale: 3,
+        // ✅ نلتقط العنصر الأصلي مباشرة بدون عمل نسخة (علشان تفضل التحويلات كما هي)
+        const canvas = await html2canvas(cardElement, {
+            scale: 4, // جودة عالية
             useCORS: true,
-            allowTaint: false,
             backgroundColor: null,
-            width: 600,
-            height: 600,
-            scrollX: 0,
-            scrollY: 0
         });
 
-        document.body.removeChild(clone);
         showLoading(false);
 
         const dataUrl = canvas.toDataURL('image/png', 1.0);
-        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        const safeName = (employeeNameInput.value.trim() || 'موظف')
+            .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
 
-        try {
-            const response = await fetch(dataUrl);
-            const blob = await response.blob();
+        // التحميل
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `بطاقة_${safeName}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-            if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
-                const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
-                await navigator.share({
-                    files: [file],
-                    title: 'بطاقة موظف',
-                    text: 'بطاقة الموظف جاهزة'
-                });
-            } else {
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `بطاقة_${safeName}.png`;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
-            }
-
-            showNotification('تم تحميل البطاقة بنجاح!', 'success');
-        } catch (shareError) {
-            console.error('فشل في المشاركة، سيتم التحميل العادي:', shareError);
-            const link = document.createElement('a');
-            link.download = `بطاقة_${safeName}.png`;
-            link.href = dataUrl;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showNotification('تم تحميل البطاقة بنجاح!', 'success');
-        }
-
+        showNotification('تم تحميل البطاقة بنجاح!', 'success');
     } catch (error) {
         console.error('خطأ أثناء توليد الصورة:', error);
         showLoading(false);
@@ -357,98 +267,42 @@ async function downloadCard() {
 
 // --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
+    const cardElement = document.getElementById('cardExportArea');
+    if (!cardElement) {
+        showNotification('لم يتم العثور على البطاقة', 'error');
+        return;
+    }
+
+    if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+    }
+
     try {
         showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
 
-        const exportRoot = document.getElementById('cardExportArea');
-        if (!exportRoot) {
-            showNotification('خطأ في العثور على البطاقة', 'error');
-            return;
-        }
-
-        if (document.fonts && document.fonts.ready) {
-            await document.fonts.ready;
-        }
-
-        const clone = exportRoot.cloneNode(true);
-        clone.id = "cardShareClone";
-
-        clone.style.position = 'absolute';
-        clone.style.left = '-9999px';
-        clone.style.top = '0';
-        clone.style.zIndex = '-1';
-        clone.style.width = '600px';
-        clone.style.height = '600px';
-        clone.style.visibility = 'visible';
-
-        const cloneContainer = clone.querySelector(".employee-photo-container");
-        const cloneImage = clone.querySelector("#processedImage");
-
-        if (cloneContainer) {
-            cloneContainer.style.position = "absolute";
-            cloneContainer.style.top = "50%";
-            cloneContainer.style.left = "50%";
-            cloneContainer.style.width = "360px";
-            cloneContainer.style.height = "360px";
-            cloneContainer.style.transform = "translate(-50%, -50%)";
-            cloneContainer.style.borderRadius = "50%";
-            cloneContainer.style.overflow = "hidden";
-            cloneContainer.style.border = "3px solid #8e1d1d";
-            cloneContainer.style.display = "flex";
-            cloneContainer.style.alignItems = "center";
-            cloneContainer.style.justifyContent = "center";
-            cloneContainer.style.background = "#d9d9d9";
-            cloneContainer.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.35)";
-            cloneContainer.style.cursor = "default";
-            cloneContainer.style.userSelect = "none";
-            cloneContainer.style.pointerEvents = "none";
-        }
-
-        if (cloneImage && processedImageDataUrl) {
-            cloneImage.src = processedImageDataUrl;
-            cloneImage.style.display = "block";
-            cloneImage.style.position = "absolute";
-            cloneImage.style.inset = "0";
-            cloneImage.style.width = "100%";
-            cloneImage.style.height = "100%";
-            cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none";
-            cloneImage.style.cursor = "default";
-            cloneImage.style.zIndex = "2";
-        }
-
-        const cloneName = clone.querySelector('#cardEmployeeName');
-        const cloneTitle = clone.querySelector('#cardJobTitle');
-        const clonePhone = clone.querySelector('#cardPhoneNumber');
-
-        if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
-        if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
-        if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
-
-        document.body.appendChild(clone);
-        await new Promise(resolve => setTimeout(resolve, 150));
-
-        const canvas = await html2canvas(clone, {
-            scale: 3,
+        // ✅ التقاط العنصر الفعلي في الصفحة (بدون نسخة)
+        const canvas = await html2canvas(cardElement, {
+            scale: 4,
             useCORS: true,
             backgroundColor: null,
-            width: 600,
-            height: 600
         });
 
-        document.body.removeChild(clone);
-        showLoading(false);
+        const blob = await new Promise(resolve =>
+            canvas.toBlob(resolve, 'image/png', 1.0)
+        );
 
-        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
-        const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
+        const safeName = (employeeNameInput.value.trim() || 'موظف')
+            .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
         const file = new File([blob], `بطاقة_${safeName}.png`, { type: 'image/png' });
+
+        showLoading(false);
 
         if (navigator.share) {
             try {
                 await navigator.share({
                     files: [file],
                     title: 'بطاقة موظف',
-                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`
+                    text: `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`,
                 });
                 showNotification('تم مشاركة البطاقة بنجاح!', 'success');
             } catch (err) {
@@ -481,13 +335,13 @@ async function shareOnWhatsApp() {
 
             showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
         }
-
     } catch (error) {
-        console.error('خطأ في مشاركة البطاقة:', error);
+        console.error('خطأ أثناء مشاركة البطاقة:', error);
         showLoading(false);
         showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
     }
 }
+
 
 
 
