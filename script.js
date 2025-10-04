@@ -222,6 +222,7 @@ function handleClearForm() {
 
 
 
+
 // --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
@@ -234,20 +235,56 @@ async function downloadCard() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
 
-        // ✅ نلتقط العنصر الأصلي مباشرة بدون عمل نسخة (علشان تفضل التحويلات كما هي)
+        // ⚙️ احصل على العناصر
+        const container = cardElement.querySelector('.employee-photo-container');
+        const image = cardElement.querySelector('#processedImage');
+
+        // 🧩 خزن القيم الأصلية
+        const originalTransform = container?.style.transform || '';
+        const originalWidth = container?.style.width || '';
+        const originalHeight = container?.style.height || '';
+
+        // 🧭 احصل على المقاسات الفعلية بالإحداثيات الحقيقية
+        const rect = container?.getBoundingClientRect();
+        const cardRect = cardElement.getBoundingClientRect();
+
+        if (rect && container) {
+            // ثبتها بالقيم الفعلية وقت الالتقاط
+            container.style.transform = 'none';
+            container.style.top = `${rect.top - cardRect.top}px`;
+            container.style.left = `${rect.left - cardRect.left}px`;
+            container.style.width = `${rect.width}px`;
+            container.style.height = `${rect.height}px`;
+        }
+
+        if (image) {
+            image.style.objectFit = 'cover';
+            image.style.transform = 'none';
+        }
+
+        // ✅ خذ اللقطة
         const canvas = await html2canvas(cardElement, {
-            scale: 4, // جودة عالية
+            scale: 4,
             useCORS: true,
             backgroundColor: null,
         });
 
+        // 🔄 رجّع القيم زي ما كانت
+        if (container) {
+            container.style.transform = originalTransform;
+            container.style.width = originalWidth;
+            container.style.height = originalHeight;
+            container.style.top = '50%';
+            container.style.left = '50%';
+        }
+
         showLoading(false);
 
+        // 🖼️ احفظ الصورة
         const dataUrl = canvas.toDataURL('image/png', 1.0);
         const safeName = (employeeNameInput.value.trim() || 'موظف')
             .replace(/[^a-zA-Z0-9\u0600-\u06FF]/g, '_');
 
-        // التحميل
         const link = document.createElement('a');
         link.href = dataUrl;
         link.download = `بطاقة_${safeName}.png`;
