@@ -105,6 +105,10 @@ async function handleImageUpload(event) {
 
         displayProcessedImage(finalDataUrl);
         showNotification('تم معالجة الصورة بنجاح!', 'success');
+
+        // ✅ تفعيل زر القص بعد معالجة الصورة بنجاح
+        cropImageBtn.disabled = false;
+
     } catch (error) {
         console.error(error);
         showNotification('فشل معالجة الصورة.', 'error');
@@ -112,6 +116,7 @@ async function handleImageUpload(event) {
         showLoading(false);
     }
 }
+
 
 function readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
@@ -385,138 +390,59 @@ async function shareOnWhatsApp() {
     }
 }
 
-
-
-
-
-
-
-
-
-
-// --------- نافذة القص المحسّنة ---------
-function openCropper() {
-    if (!processedImageDataUrl) {
-        showNotification('من فضلك ارفع صورة أولاً لقصّها', 'warning');
-        return;
-    }
-    
-    // عرض النافذة مع تأثير انيميشن
-    cropperModal.classList.add('show');
-    cropperModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden'; // منع التمرير في الخلفية
-    
-    // تهيئة الصورة للمحرر مع تحسينات
-    cropperImage.onload = () => {
-        // تنظيف المحرر السابق إن وجد
-        if (cropper) {
-            cropper.destroy();
-            cropper = null;
-        }
-        
-        // انتظار قصير لضمان عرض الصورة
-        setTimeout(() => {
-            cropper = new Cropper(cropperImage, {
-                aspectRatio: 1, // نسبة 1:1 للدائرة
-                viewMode: 1, // تقييد منطقة القص داخل الاطار
-                background: false, // إزالة الخلفية الشطرنجية
-                autoCropArea: 0.8, // منطقة القص الافتراضية
-                movable: true, // يمكن تحريك الصورة
-                zoomable: true, // يمكن التكبير/التصغير
-                rotatable: true, // يمكن الدوران
-                scalable: true, // يمكن التمديد
-                responsive: true, // يتجاوب مع تغيير حجم النافذة
-                checkCrossOrigin: false,
-                checkOrientation: false,
-                modal: true, // عرض القناع فوق الصورة
-                guides: true, // عرض الخطوط المرشدة
-                center: true, // عرض مركز القص
-                highlight: false, // إزالة تمييز منطقة القص
-                cropBoxMovable: true, // يمكن تحريك صندوق القص
-                cropBoxResizable: true, // يمكن تغيير حجم صندوق القص
-                toggleDragModeOnDblclick: false,
-                ready() {
-                    // تطبيق زر CSS لجعل منطقة القص دائرية
-                    const viewBox = cropperModal.querySelector('.cropper-view-box');
-                    const face = cropperModal.querySelector('.cropper-face');
-                    if (viewBox) viewBox.style.borderRadius = '50%';
-                    if (face) face.style.borderRadius = '50%';
-                }
-            });
-        }, 100);
-    };
-    
-    cropperImage.onerror = () => {
-        showNotification('فشل في تحميل الصورة للقص', 'error');
-        closeCropper();
-    };
-    
-    cropperImage.src = processedImageDataUrl;
-}
-
-function closeCropper() {
-    // تنظيف المحرر
-    if (cropper) {
-        cropper.destroy();
-        cropper = null;
-    }
-    
-    // إغلاق النافذة مع تأثير
-    cropperModal.classList.remove('show');
-    cropperModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = ''; // إعادة التمرير
-    
-    // مسح مصدر الصورة لتوفير الذاكرة
-    cropperImage.src = '';
-}
-
+// --------- قص ---------
 async function confirmCrop() {
     if (!cropper) {
         showNotification('لم يتم العثور على محرر الصور', 'error');
         return;
     }
-    
+
     try {
         showLoading(true, 'جارِ قص الصورة...');
-        
-        // الحصول على الصورة المقصوصة بجودة عالية
-        const canvas = cropper.getCroppedCanvas({
-            width: 1200, // حجم أكبر لجودة أفضل
+
+        // نحاول الحصول على canvas أكثر من مرة لو لسه مش جاهز
+        let canvas = cropper.getCroppedCanvas({
+            width: 1200,
             height: 1200,
-            minWidth: 400, // حد أدنى للجودة
-            minHeight: 400,
-            maxWidth: 2048, // حد أقصى لمنع مشاكل الذاكرة
-            maxHeight: 2048,
-            fillColor: '#ffffff', // خلفية بيضاء للمناطق الشفافة
+            fillColor: '#ffffff',
             imageSmoothingEnabled: true,
             imageSmoothingQuality: 'high'
         });
-        
+
         if (!canvas) {
-            throw new Error('فشل في إنشاء الصورة المقصوصة');
+            await new Promise(r => setTimeout(r, 150)); // ننتظر 150 مللي ثانية
+            canvas = cropper.getCroppedCanvas({
+                width: 1200,
+                height: 1200,
+                fillColor: '#ffffff',
+                imageSmoothingEnabled: true,
+                imageSmoothingQuality: 'high'
+            });
         }
-        
-        // تحويل إلى Data URL بجودة عالية
+
+        if (!canvas) {
+            showNotification('تعذر قص الصورة. حاول مرة أخرى.', 'error');
+            showLoading(false);
+            return;
+        }
+
         const dataUrl = canvas.toDataURL('image/png', 1.0);
-        
-        // تحديث الصورة المعالجة
         processedImageDataUrl = dataUrl;
         processedImage.src = dataUrl;
-        
-        // إعادة تعيين موضع وحجم الصورة في البطاقة
-        currentX = 0; 
-        currentY = 0; 
-        scale = 1; 
+
+        // إعادة تعيين الوضع
+        currentX = 0;
+        currentY = 0;
+        scale = 1;
         updateTransform();
-        
+
         // تفعيل الأزرار
         downloadCardBtn.disabled = false;
         shareCardBtn.disabled = false;
         if (cropImageBtn) cropImageBtn.disabled = false;
-        
+
         showLoading(false);
         showNotification('تم قص الصورة بنجاح ✨', 'success');
-        
     } catch (error) {
         console.error('خطأ في قص الصورة:', error);
         showLoading(false);
@@ -526,12 +452,7 @@ async function confirmCrop() {
     }
 }
 
-// إغلاق بالضغط على Escape
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && cropperModal.classList.contains('show')) {
-        closeCropper();
-    }
-});
+
 
 
 // --------- إشعارات ---------

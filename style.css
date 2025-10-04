@@ -395,15 +395,16 @@ button:disabled {
 .cropper-modal {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.95); /* 🔹 جعل الخلفية أغمق */
     display: none;
     align-items: center;
     justify-content: center;
     padding: clamp(12px, 2vw, 24px);
     z-index: 1100;
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(2px); /* 🔹 قلل البلور علشان الصورة تبقى واضحة */
+    -webkit-backdrop-filter: blur(2px);
 }
+
 
 .cropper-modal.show {
     display: flex;
