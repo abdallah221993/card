@@ -232,11 +232,11 @@ async function downloadCard() {
 
     try {
         showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
-        
+
         // ✅ اعمل نسخة جديدة من البطاقة
         const clone = exportRoot.cloneNode(true);
         clone.id = "cardExportClone";
-        
+
         // إعداد النسخة المخفية
         clone.style.position = 'absolute';
         clone.style.left = '-9999px';
@@ -245,47 +245,55 @@ async function downloadCard() {
         clone.style.width = '600px';
         clone.style.height = '600px';
         clone.style.visibility = 'visible';
-        
-        // عالج صورة الموظف والحاوية لضمان الثبات أثناء التصوير
-        const cloneImage = clone.querySelector("#processedImage");
-        const cloneContainer = clone.querySelector(".employee-photo-container");
 
-        if (cloneImage && processedImageDataUrl) {
-            cloneImage.src = processedImageDataUrl;
-            cloneImage.style.display = "block";
-            cloneImage.style.width = "100%";
-            cloneImage.style.height = "100%";
-            cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none";
-            cloneImage.style.position = "absolute";
-            cloneImage.style.left = "0";
-            cloneImage.style.top = "0";
-            cloneImage.style.cursor = "default";
-            cloneImage.style.zIndex = "2";
-        }
+        // ثبّت الحاوية والإطار والصورة يدويًا لتفادي الحركة
+        const cloneContainer = clone.querySelector(".employee-photo-container");
+        const cloneImage = clone.querySelector("#processedImage");
 
         if (cloneContainer) {
             cloneContainer.style.position = "absolute";
             cloneContainer.style.top = "50%";
             cloneContainer.style.left = "50%";
+            cloneContainer.style.width = "360px";
+            cloneContainer.style.height = "360px";
             cloneContainer.style.transform = "translate(-50%, -50%)";
+            cloneContainer.style.borderRadius = "50%";
+            cloneContainer.style.overflow = "hidden";
+            cloneContainer.style.border = "3px solid #8e1d1d";
+            cloneContainer.style.display = "flex";
+            cloneContainer.style.alignItems = "center";
+            cloneContainer.style.justifyContent = "center";
+            cloneContainer.style.background = "#d9d9d9";
+            cloneContainer.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.35)";
             cloneContainer.style.cursor = "default";
             cloneContainer.style.userSelect = "none";
             cloneContainer.style.pointerEvents = "none";
-            cloneContainer.style.zIndex = "1";
         }
-        
+
+        if (cloneImage && processedImageDataUrl) {
+            cloneImage.src = processedImageDataUrl;
+            cloneImage.style.display = "block";
+            cloneImage.style.position = "absolute";
+            cloneImage.style.inset = "0";
+            cloneImage.style.width = "100%";
+            cloneImage.style.height = "100%";
+            cloneImage.style.objectFit = "cover";
+            cloneImage.style.transform = "none";
+            cloneImage.style.cursor = "default";
+            cloneImage.style.zIndex = "2";
+        }
+
         // تحديث النصوص
         const cloneName = clone.querySelector('#cardEmployeeName');
         const cloneTitle = clone.querySelector('#cardJobTitle');
         const clonePhone = clone.querySelector('#cardPhoneNumber');
-        
+
         if (cloneName) cloneName.textContent = employeeNameInput.value.trim() || 'اسم الموظف';
         if (cloneTitle) cloneTitle.textContent = jobTitleInput.value.trim() || 'المسمى الوظيفي';
         if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
 
         document.body.appendChild(clone);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150));
 
         const canvas = await html2canvas(clone, {
             scale: 3,
@@ -346,11 +354,12 @@ async function downloadCard() {
 }
 
 
+
 // --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
-        
+
         const exportRoot = document.getElementById('cardExportArea');
         if (!exportRoot) {
             showNotification('خطأ في العثور على البطاقة', 'error');
@@ -371,33 +380,41 @@ async function shareOnWhatsApp() {
         clone.style.width = '600px';
         clone.style.height = '600px';
         clone.style.visibility = 'visible';
-        
-        const cloneImage = clone.querySelector("#processedImage");
-        const cloneContainer = clone.querySelector(".employee-photo-container");
 
-        if (cloneImage && processedImageDataUrl) {
-            cloneImage.src = processedImageDataUrl;
-            cloneImage.style.display = "block";
-            cloneImage.style.width = "100%";
-            cloneImage.style.height = "100%";
-            cloneImage.style.objectFit = "cover";
-            cloneImage.style.transform = "none";
-            cloneImage.style.position = "absolute";
-            cloneImage.style.left = "0";
-            cloneImage.style.top = "0";
-            cloneImage.style.cursor = "default";
-            cloneImage.style.zIndex = "2";
-        }
+        const cloneContainer = clone.querySelector(".employee-photo-container");
+        const cloneImage = clone.querySelector("#processedImage");
 
         if (cloneContainer) {
             cloneContainer.style.position = "absolute";
             cloneContainer.style.top = "50%";
             cloneContainer.style.left = "50%";
+            cloneContainer.style.width = "360px";
+            cloneContainer.style.height = "360px";
             cloneContainer.style.transform = "translate(-50%, -50%)";
+            cloneContainer.style.borderRadius = "50%";
+            cloneContainer.style.overflow = "hidden";
+            cloneContainer.style.border = "3px solid #8e1d1d";
+            cloneContainer.style.display = "flex";
+            cloneContainer.style.alignItems = "center";
+            cloneContainer.style.justifyContent = "center";
+            cloneContainer.style.background = "#d9d9d9";
+            cloneContainer.style.boxShadow = "0 12px 30px rgba(0, 0, 0, 0.35)";
             cloneContainer.style.cursor = "default";
             cloneContainer.style.userSelect = "none";
             cloneContainer.style.pointerEvents = "none";
-            cloneContainer.style.zIndex = "1";
+        }
+
+        if (cloneImage && processedImageDataUrl) {
+            cloneImage.src = processedImageDataUrl;
+            cloneImage.style.display = "block";
+            cloneImage.style.position = "absolute";
+            cloneImage.style.inset = "0";
+            cloneImage.style.width = "100%";
+            cloneImage.style.height = "100%";
+            cloneImage.style.objectFit = "cover";
+            cloneImage.style.transform = "none";
+            cloneImage.style.cursor = "default";
+            cloneImage.style.zIndex = "2";
         }
 
         const cloneName = clone.querySelector('#cardEmployeeName');
@@ -409,7 +426,7 @@ async function shareOnWhatsApp() {
         if (clonePhone) clonePhone.textContent = phoneNumberInput.value.trim() || 'رقم الهاتف';
 
         document.body.appendChild(clone);
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 150));
 
         const canvas = await html2canvas(clone, {
             scale: 3,
@@ -461,7 +478,7 @@ async function shareOnWhatsApp() {
             const whatsappText = `بطاقة الموظف: ${employeeNameInput.value.trim() || 'موظف'}`;
             const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(whatsappText)}`;
             window.open(whatsappUrl, '_blank');
-            
+
             showNotification('تم تحميل البطاقة وفتح واتساب. قم بإرفاق الصورة يدويًا.', 'info');
         }
 
@@ -471,6 +488,9 @@ async function shareOnWhatsApp() {
         showNotification('حدث خطأ أثناء مشاركة البطاقة. حاول مرة أخرى.', 'error');
     }
 }
+
+
+
 
 
 
