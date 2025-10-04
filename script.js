@@ -215,36 +215,46 @@ async function downloadCard() {
     }
 
     try {
-        // ✅ احفظ transform الحالي للصورة
-        const oldTransform = processedImage.style.transform;
-        processedImage.style.transform = "none"; // رجع الصورة للوضع الأصلي قبل الالتقاط
+        // ✅ اعمل نسخة جديدة من البطاقة
+        const clone = exportRoot.cloneNode(true);
+        clone.id = "cardExportClone";
 
-        // إخفاء أي طبقات قد تُسبب تغميق الصورة أثناء الالتقاط
-        exportRoot.classList.add('exporting');
-        await new Promise(r => requestAnimationFrame(r));
+        // عالج صورة الموظف في النسخة (خليها ثابتة)
+        const cloneImage = clone.querySelector("#processedImage");
+        if (cloneImage && processedImageDataUrl) {
+            cloneImage.src = processedImageDataUrl;
+            cloneImage.style.display = "block";
+            cloneImage.style.width = "100%";
+            cloneImage.style.height = "100%";
+            cloneImage.style.objectFit = "cover";
+            cloneImage.style.transform = "none"; // لا سحب ولا تكبير
+        }
 
-        const canvas = await html2canvas(exportRoot, {
-            scale: 4, // ✅ أعلى جودة
+        document.body.appendChild(clone);
+
+        // صور النسخة بـ html2canvas
+        const canvas = await html2canvas(clone, {
+            scale: 4,
             useCORS: true,
             backgroundColor: null
         });
 
-        exportRoot.classList.remove('exporting');
+        // احذف النسخة بعد التصوير
+        document.body.removeChild(clone);
 
-        // ✅ رجع transform القديم
-        processedImage.style.transform = oldTransform;
-
+        // حفظ البطاقة
         const dataUrl = canvas.toDataURL('image/png', 1.0);
         const link = document.createElement('a');
         const safeName = (employeeNameInput.value.trim() || 'موظف').replace(/\s+/g, '_');
         link.download = `بطاقة_${safeName}.png`;
         link.href = dataUrl;
         link.click();
+
     } catch (error) {
-        exportRoot.classList.remove('exporting');
         console.error('خطأ أثناء توليد الصورة:', error);
     }
 }
+
 
 // --------- نافذة القص ---------
 function openCropper() {
