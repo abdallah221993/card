@@ -100,7 +100,7 @@ async function handleImageUpload(event) {
     try {
         showLoading(true, 'جارِ معالجة الصورة...');
         const originalImageDataUrl = await readFileAsDataURL(file);
-        const processedViaApi = await removeBackgroundWithAPI(originalImageDataUrl, file);
+        const processedViaApi = null; // مؤقتاً
         const finalDataUrl = processedViaApi || originalImageDataUrl;
 
         displayProcessedImage(finalDataUrl);
@@ -127,39 +127,19 @@ function readFileAsDataURL(file) {
     });
 }
 
+// تعطيل remove.bg بالكامل - الصورة الأصلية تُستخدم كما هي
 async function removeBackgroundWithAPI(_, originalFile) {
-    if (!REMOVE_BG_API_KEY) return null;
-    try {
-        const formData = new FormData();
-        formData.append('image_file', originalFile);
-        formData.append('size', 'auto');
-
-        const response = await fetch('https://api.remove.bg/v1.0/removebg', {
-            method: 'POST',
-            headers: { 'X-Api-Key': REMOVE_BG_API_KEY },
-            body: formData
-        });
-
-        if (!response.ok) {
-            console.error('remove.bg error:', response.status, await response.text());
-            return null;
-        }
-
-        const blob = await response.blob();
-        return await blobToDataURL(blob);
-    } catch (err) {
-        console.error('API request failed:', err);
-        return null;
-    }
-}
-
-function blobToDataURL(blob) {
-    return new Promise((resolve) => {
+    console.log("🟡 تمت معالجة الصورة بدون إزالة الخلفية (remove.bg معطل).");
+    
+    // نحول الصورة الأصلية إلى Base64 مباشرة
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => resolve(e.target.result);
-        reader.readAsDataURL(blob);
+        reader.onerror = reject;
+        reader.readAsDataURL(originalFile);
     });
 }
+
 
 function displayProcessedImage(dataUrl) {
     processedImageDataUrl = dataUrl;
@@ -392,8 +372,8 @@ async function shareOnWhatsApp() {
 
 // --------- قص ---------
 async function confirmCrop() {
-    if (!cropper) {
-        showNotification('لم يتم العثور على محرر الصور', 'error');
+    if (!cropper || !cropperModal.classList.contains('show')) {
+        console.warn('⚠️ لا يمكن تنفيذ القص — cropper غير جاهز أو النافذة مغلقة.');
         return;
     }
 
@@ -453,6 +433,110 @@ async function confirmCrop() {
 }
 
 
+
+// --------- نافذة القص الآمنة (نسخة مستقرة نهائيًا) ---------
+
+function openCropper() {
+    console.log("✅ تم الضغط على زر القص");
+
+    // 🔹 التحقق من وجود الصورة
+    if (!processedImageDataUrl || typeof processedImageDataUrl !== "string") {
+        showNotification("من فضلك ارفع صورة أولاً لقصّها", "warning");
+        return;
+    }
+
+    // 🔹 لو النافذة مفتوحة بالفعل، ما تفتحهاش تاني
+    if (cropperModal.classList.contains("show")) return;
+
+    // 🔹 إظهار النافذة
+    cropperModal.classList.add("show");
+    cropperModal.setAttribute("aria-hidden", "false");
+    document.body.style.overflow = "hidden";
+
+    // 🔹 تأكد أن الصورة Base64 صالحة
+    if (!processedImageDataUrl.startsWith("data:image")) {
+        showNotification("الصورة غير جاهزة للقص بعد. حاول إعادة رفعها.", "error");
+        closeCropper();
+        return;
+    }
+
+    // 🔹 تنظيف أي أحداث سابقة
+    cropperImage.onload = null;
+    cropperImage.onerror = null;
+
+    // ✅ تحميل الصورة مباشرة بدون ?cache=
+    cropperImage.src = "";
+    cropperImage.src = processedImageDataUrl;
+
+    // ✅ عند نجاح تحميل الصورة
+    cropperImage.onload = () => {
+        console.log("📸 تم تحميل الصورة داخل أداة القص بنجاح");
+
+        // تدمير أي cropper سابق
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+
+        // إنشاء Cropper جديد بثبات تام
+        cropper = new Cropper(cropperImage, {
+            aspectRatio: 1,
+            viewMode: 1,
+            background: false,
+            autoCropArea: 0.85,
+            movable: true,
+            zoomable: true,
+            rotatable: false,
+            scalable: false,
+            responsive: true,
+            checkCrossOrigin: false,
+            modal: true,
+            guides: true,
+            highlight: false,
+            center: true,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+            ready() {
+                const viewBox = cropperModal.querySelector(".cropper-view-box");
+                const face = cropperModal.querySelector(".cropper-face");
+                if (viewBox) viewBox.style.borderRadius = "50%";
+                if (face) face.style.borderRadius = "50%";
+            },
+        });
+    };
+
+    // ❌ عند فشل تحميل الصورة (dataURL غير صالح)
+    cropperImage.onerror = (err) => {
+        console.error("❌ فشل تحميل الصورة داخل cropper:", err);
+        showNotification("تعذر تحميل الصورة للقص. يرجى إعادة رفعها.", "error");
+
+        // تنظيف كل شيء ومنع التكرار
+        cropperImage.onload = null;
+        cropperImage.onerror = null;
+        cropperImage.src = "";
+        closeCropper();
+    };
+}
+
+
+
+function closeCropper() {
+    try {
+        if (cropper) {
+            cropper.destroy();
+            cropper = null;
+        }
+    } catch (err) {
+        console.warn("⚠️ خطأ أثناء تدمير cropper:", err);
+    }
+
+    // 🔹 إغلاق النافذة بأمان
+    cropperModal.classList.remove('show');
+    cropperModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    cropperImage.src = ''; // مهم جدًا لتفريغ الصورة
+}
 
 
 // --------- إشعارات ---------

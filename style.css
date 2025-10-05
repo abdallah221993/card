@@ -600,3 +600,47 @@ button:disabled {
         justify-content: center;
     }
 }
+
+
+/* 🎯 إصلاح نهائي للشفافية داخل نافذة القص بالكامل */
+
+/* الخلفية الداكنة وراء النافذة */
+#cropperModal {
+  background: rgba(0, 0, 0, 0.85) !important;
+}
+
+/* الصندوق الأبيض (النافذة نفسها) */
+#cropperModal .cropper-dialog {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* محتوى نافذة القص بالكامل */
+#cropperModal .cropper-body {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* الصورة داخل أداة القص */
+#cropperModal .cropper-body img {
+  background-color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* 👇 ده أهم جزء: بيمنع cropper.js من إضافة طبقة شفافة بعد ثانية */
+#cropperModal .cropper-container .cropper-modal {
+  background: #ffffff !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+}
+
+/* ضمان أن الوجه (الدائرة) يظل أبيض واضح */
+#cropperModal .cropper-view-box,
+#cropperModal .cropper-face {
+  background-color: #fff !important;
+  border: 3px solid #c0392b !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+}
+
