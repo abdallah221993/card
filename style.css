@@ -351,9 +351,10 @@ button:disabled {
 #cardEmployeeName {
   direction: rtl !important;
   unicode-bidi: isolate !important;
-  text-align: right !important;
+  text-align: center !important;
   font-family: 'Cairo', Arial, Tahoma, sans-serif !important;
   letter-spacing: 0 !important;
+  display: block; /* مهم حتى text-align:center تشتغل على span */
 }
 
 .card-actions {
