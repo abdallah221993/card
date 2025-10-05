@@ -186,12 +186,17 @@ async function downloadCard() {
     cardElement.setAttribute('dir', 'rtl');
     cardElement.style.direction = "rtl";
     cardElement.style.unicodeBidi = "isolate";
-    // لو حابب تأكد أكثر، أضف لكل عناصر النص داخل البطاقة:
+
+    // الحل النهائي: اجعل اسم الموظف في المنتصف بالعربي مضبوط
     const nameElem = cardElement.querySelector('#cardEmployeeName');
     if (nameElem) {
         nameElem.setAttribute('dir', 'rtl');
         nameElem.style.direction = "rtl";
         nameElem.style.unicodeBidi = "isolate";
+        nameElem.style.textAlign = "center";
+        nameElem.style.fontFamily = "'Cairo', Arial, Tahoma, sans-serif";
+        nameElem.style.display = "block";
+        nameElem.style.letterSpacing = "0";
     }
 
     if (document.fonts && document.fonts.ready) {
