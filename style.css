@@ -348,6 +348,14 @@ button:disabled {
 }
 
 
+#cardEmployeeName {
+  direction: rtl !important;
+  unicode-bidi: isolate !important;
+  text-align: right !important;
+  font-family: 'Cairo', Arial, Tahoma, sans-serif !important;
+  letter-spacing: 0 !important;
+}
+
 .card-actions {
     display: flex;
     flex-wrap: wrap;
