@@ -182,6 +182,18 @@ async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
     if (!cardElement) return;
 
+    // === الحل: ضبط الاتجاه وخصائص النص للبطاقة وكل عناصرها ===
+    cardElement.setAttribute('dir', 'rtl');
+    cardElement.style.direction = "rtl";
+    cardElement.style.unicodeBidi = "isolate";
+    // لو حابب تأكد أكثر، أضف لكل عناصر النص داخل البطاقة:
+    const nameElem = cardElement.querySelector('#cardEmployeeName');
+    if (nameElem) {
+        nameElem.setAttribute('dir', 'rtl');
+        nameElem.style.direction = "rtl";
+        nameElem.style.unicodeBidi = "isolate";
+    }
+
     if (document.fonts && document.fonts.ready) {
         await document.fonts.ready;
     }
