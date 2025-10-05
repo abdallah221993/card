@@ -391,20 +391,20 @@ button:disabled {
     }
 }
 
+
 /* Cropper modal - محسّن للعمل على جميع الشاشات */
 .cropper-modal {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.95); /* 🔹 جعل الخلفية أغمق */
+    background: #fff !important; /* تم إزالة الشفافية ليصبح أبيض بالكامل */
     display: none;
     align-items: center;
     justify-content: center;
     padding: clamp(12px, 2vw, 24px);
     z-index: 1100;
-    backdrop-filter: blur(2px); /* 🔹 قلل البلور علشان الصورة تبقى واضحة */
-    -webkit-backdrop-filter: blur(2px);
+    backdrop-filter: none !important; /* ألغِ أي تأثير بلور */
+    -webkit-backdrop-filter: none !important;
 }
-
 
 .cropper-modal.show {
     display: flex;
@@ -533,114 +533,30 @@ button:disabled {
     }
 }
 
-/* إصلاح مشاكل RTL مع Cropper */
-.cropper-container {
-    direction: ltr;
-}
-
-.cropper-modal .cropper-container {
-    font-family: 'Cairo', sans-serif;
-}
-
-/* Notifications */
-@keyframes slideIn {
-    from {
-        transform: translateX(120%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOut {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(120%);
-        opacity: 0;
-    }
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-    .main-content {
-        grid-template-columns: 1fr;
-    }
-
-    .business-card {
-        width: min(90vw, 420px);
-    }
-
-    .employee-photo-container {
-        transform: translate(-50%, -10%);
-    }
-
-    section {
-        padding: clamp(16px, 4vw, 28px);
-    }
-}
-
-@media (max-width: 640px) {
-    body {
-        padding: 16px;
-    }
-
-    .form-actions,
-    .card-actions,
-    .secondary-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    button {
-        justify-content: center;
-    }
-}
-
-
-/* 🎯 إصلاح نهائي للشفافية داخل نافذة القص بالكامل */
-
-/* الخلفية الداكنة وراء النافذة */
+/* إجبار الطبقة الخارجية للمودال أن تكون بيضاء بالكامل وبدون شفافية */
+.cropper-modal,
 #cropperModal {
-  background: rgba(0, 0, 0, 0.85) !important;
+    background: #fff !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    opacity: 1 !important;
 }
 
-/* الصندوق الأبيض (النافذة نفسها) */
-#cropperModal .cropper-dialog {
-  background-color: #ffffff !important;
-  opacity: 1 !important;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+/* التأكيد على أن كل طبقات cropper الداخلية بيضاء وغير شفافة */
+#cropperModal .cropper-container,
+#cropperModal .cropper-container * {
+    background: #fff !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    filter: none !important;
+    transition: none !important;
 }
 
-/* محتوى نافذة القص بالكامل */
-#cropperModal .cropper-body {
-  background-color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* الصورة داخل أداة القص */
-#cropperModal .cropper-body img {
-  background-color: #ffffff !important;
-  opacity: 1 !important;
-}
-
-/* 👇 ده أهم جزء: بيمنع cropper.js من إضافة طبقة شفافة بعد ثانية */
-#cropperModal .cropper-container .cropper-modal {
-  background: #ffffff !important;
-  opacity: 1 !important;
-  pointer-events: none !important;
-}
-
-/* ضمان أن الوجه (الدائرة) يظل أبيض واضح */
+/* التأكيد على أن الدائرة (الصورة المقصوصة) تظل واضحة */
 #cropperModal .cropper-view-box,
 #cropperModal .cropper-face {
-  background-color: #fff !important;
-  border: 3px solid #c0392b !important;
-  opacity: 1 !important;
-  box-shadow: none !important;
+    background: #fff !important;
+    border: 3px solid #c0392b !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
 }
-

@@ -1,8 +1,4 @@
-// script.js (نسخة مضبوطة بالكامل)
-
-// --------- إعدادات API ----------
-const REMOVE_BG_API_KEY = 'VXz55xAL48D2xp4LL3EQhTYh'; 
-// ----------------------------------------------------
+// script.js (نسخة نهائية بدون remove.bg أو أي أكواد أو إشارات متعلقة بها)
 
 let processedImageDataUrl = null;
 let currentEmployeeData = {};
@@ -100,15 +96,9 @@ async function handleImageUpload(event) {
     try {
         showLoading(true, 'جارِ معالجة الصورة...');
         const originalImageDataUrl = await readFileAsDataURL(file);
-        const processedViaApi = null; // مؤقتاً
-        const finalDataUrl = processedViaApi || originalImageDataUrl;
-
-        displayProcessedImage(finalDataUrl);
+        displayProcessedImage(originalImageDataUrl);
         showNotification('تم معالجة الصورة بنجاح!', 'success');
-
-        // ✅ تفعيل زر القص بعد معالجة الصورة بنجاح
         cropImageBtn.disabled = false;
-
     } catch (error) {
         console.error(error);
         showNotification('فشل معالجة الصورة.', 'error');
@@ -116,7 +106,6 @@ async function handleImageUpload(event) {
         showLoading(false);
     }
 }
-
 
 function readFileAsDataURL(file) {
     return new Promise((resolve, reject) => {
@@ -127,30 +116,14 @@ function readFileAsDataURL(file) {
     });
 }
 
-// تعطيل remove.bg بالكامل - الصورة الأصلية تُستخدم كما هي
-async function removeBackgroundWithAPI(_, originalFile) {
-    console.log("🟡 تمت معالجة الصورة بدون إزالة الخلفية (remove.bg معطل).");
-    
-    // نحول الصورة الأصلية إلى Base64 مباشرة
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(originalFile);
-    });
-}
-
-
 function displayProcessedImage(dataUrl) {
     processedImageDataUrl = dataUrl;
     processedImage.src = dataUrl;
     processedImage.style.display = 'block';
     photoPlaceholder.style.display = 'none';
 
-    // ✅ تحديث البيانات والصورة فورًا
     updatePreviewText();
 
-    // ✅ فعل أزرار التحميل والمشاركة والقص
     downloadCardBtn.disabled = false;
     shareCardBtn.disabled = false;
     if (cropImageBtn) cropImageBtn.disabled = false;
@@ -171,7 +144,6 @@ async function handleFormSubmit(event) {
         image: processedImageDataUrl
     };
 
-    // ✅ تحديث البطاقة
     updatePreviewText();
     if (processedImageDataUrl) {
         processedImage.src = processedImageDataUrl;
@@ -205,7 +177,6 @@ function handleClearForm() {
     if (cropImageBtn) cropImageBtn.disabled = true;
 }
 
-
 // --------- تحميل البطاقة بجودة عالية ---------
 async function downloadCard() {
     const cardElement = document.getElementById('cardExportArea');
@@ -218,7 +189,7 @@ async function downloadCard() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للتحميل...');
 
-        // 🧩 ثبّت الإطار والصورة مؤقتًا
+        // ثبّت الإطار والصورة مؤقتًا
         const container = cardElement.querySelector('.employee-photo-container');
         const image = cardElement.querySelector('#processedImage');
         const cardRect = cardElement.getBoundingClientRect();
@@ -234,7 +205,7 @@ async function downloadCard() {
             height: container.style.height,
         };
 
-        // ✅ تثبيت الحاوية بالإحداثيات الفعلية
+        // تثبيت الحاوية بالإحداثيات الفعلية
         container.style.position = 'absolute';
         container.style.transform = 'none';
         container.style.top = `${rect.top - cardRect.top}px`;
@@ -242,7 +213,7 @@ async function downloadCard() {
         container.style.width = `${rect.width}px`;
         container.style.height = `${rect.height}px`;
 
-        // ✅ تأكد أن الصورة ممتدة بالكامل داخل الإطار
+        // تأكد أن الصورة ممتدة بالكامل داخل الإطار
         if (image) {
             image.style.objectFit = 'cover';
             image.style.transform = 'none';
@@ -255,7 +226,7 @@ async function downloadCard() {
             backgroundColor: null,
         });
 
-        // 🔄 رجّع القيم الأصلية
+        // رجّع القيم الأصلية
         Object.assign(container.style, originalStyle);
 
         showLoading(false);
@@ -280,8 +251,6 @@ async function downloadCard() {
     }
 }
 
-
-
 // --------- مشاركة على واتساب ---------
 async function shareOnWhatsApp() {
     const cardElement = document.getElementById('cardExportArea');
@@ -294,7 +263,7 @@ async function shareOnWhatsApp() {
     try {
         showLoading(true, 'جارِ تحضير البطاقة للمشاركة...');
 
-        // 🧩 ثبّت الإطار والصورة مؤقتًا
+        // ثبّت الإطار والصورة مؤقتًا
         const container = cardElement.querySelector('.employee-photo-container');
         const image = cardElement.querySelector('#processedImage');
         const cardRect = cardElement.getBoundingClientRect();
@@ -310,7 +279,7 @@ async function shareOnWhatsApp() {
             height: container.style.height,
         };
 
-        // ✅ تثبيت الحاوية بالإحداثيات الفعلية
+        // تثبيت الحاوية بالإحداثيات الفعلية
         container.style.position = 'absolute';
         container.style.transform = 'none';
         container.style.top = `${rect.top - cardRect.top}px`;
@@ -330,7 +299,7 @@ async function shareOnWhatsApp() {
             backgroundColor: null,
         });
 
-        // 🔄 رجّع القيم الأصلية
+        // رجّع القيم الأصلية
         Object.assign(container.style, originalStyle);
 
         const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
@@ -380,7 +349,6 @@ async function confirmCrop() {
     try {
         showLoading(true, 'جارِ قص الصورة...');
 
-        // نحاول الحصول على canvas أكثر من مرة لو لسه مش جاهز
         let canvas = cropper.getCroppedCanvas({
             width: 1200,
             height: 1200,
@@ -390,7 +358,7 @@ async function confirmCrop() {
         });
 
         if (!canvas) {
-            await new Promise(r => setTimeout(r, 150)); // ننتظر 150 مللي ثانية
+            await new Promise(r => setTimeout(r, 150));
             canvas = cropper.getCroppedCanvas({
                 width: 1200,
                 height: 1200,
@@ -432,53 +400,41 @@ async function confirmCrop() {
     }
 }
 
-
-
-// --------- نافذة القص الآمنة (نسخة مستقرة نهائيًا) ---------
-
+// --------- نافذة القص الآمنة ---------
 function openCropper() {
     console.log("✅ تم الضغط على زر القص");
 
-    // 🔹 التحقق من وجود الصورة
     if (!processedImageDataUrl || typeof processedImageDataUrl !== "string") {
         showNotification("من فضلك ارفع صورة أولاً لقصّها", "warning");
         return;
     }
 
-    // 🔹 لو النافذة مفتوحة بالفعل، ما تفتحهاش تاني
     if (cropperModal.classList.contains("show")) return;
 
-    // 🔹 إظهار النافذة
     cropperModal.classList.add("show");
     cropperModal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
 
-    // 🔹 تأكد أن الصورة Base64 صالحة
     if (!processedImageDataUrl.startsWith("data:image")) {
         showNotification("الصورة غير جاهزة للقص بعد. حاول إعادة رفعها.", "error");
         closeCropper();
         return;
     }
 
-    // 🔹 تنظيف أي أحداث سابقة
     cropperImage.onload = null;
     cropperImage.onerror = null;
 
-    // ✅ تحميل الصورة مباشرة بدون ?cache=
     cropperImage.src = "";
     cropperImage.src = processedImageDataUrl;
 
-    // ✅ عند نجاح تحميل الصورة
     cropperImage.onload = () => {
         console.log("📸 تم تحميل الصورة داخل أداة القص بنجاح");
 
-        // تدمير أي cropper سابق
         if (cropper) {
             cropper.destroy();
             cropper = null;
         }
 
-        // إنشاء Cropper جديد بثبات تام
         cropper = new Cropper(cropperImage, {
             aspectRatio: 1,
             viewMode: 1,
@@ -506,20 +462,16 @@ function openCropper() {
         });
     };
 
-    // ❌ عند فشل تحميل الصورة (dataURL غير صالح)
     cropperImage.onerror = (err) => {
         console.error("❌ فشل تحميل الصورة داخل cropper:", err);
         showNotification("تعذر تحميل الصورة للقص. يرجى إعادة رفعها.", "error");
 
-        // تنظيف كل شيء ومنع التكرار
         cropperImage.onload = null;
         cropperImage.onerror = null;
         cropperImage.src = "";
         closeCropper();
     };
 }
-
-
 
 function closeCropper() {
     try {
@@ -531,13 +483,11 @@ function closeCropper() {
         console.warn("⚠️ خطأ أثناء تدمير cropper:", err);
     }
 
-    // 🔹 إغلاق النافذة بأمان
     cropperModal.classList.remove('show');
     cropperModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
-    cropperImage.src = ''; // مهم جدًا لتفريغ الصورة
+    cropperImage.src = '';
 }
-
 
 // --------- إشعارات ---------
 function showNotification(message, type = 'info') {
@@ -680,4 +630,3 @@ function getDistance(touch1, touch2) {
         touch2.clientY - touch1.clientY
     );
 }
-
