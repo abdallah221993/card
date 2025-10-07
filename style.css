@@ -235,7 +235,6 @@ button:disabled {
     gap: 24px;
 }
 
-
 .business-card {
     position: relative;
     width: min(90vw, 480px);
@@ -246,30 +245,15 @@ button:disabled {
     background: url('images/template-bg.jpg') center / cover no-repeat;
 }
 
-/* ⚪ الإطار الأبيض */
-.business-card::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: clamp(300px, 58%, 710px); /* 👈 مرن والماكس 715px */
-    aspect-ratio: 1 / 1;
-    border-radius: 50%;
-    border: 4px solid #fff;
-    transform: translate(-56%, -50%);
-    z-index: 5; /* فوق الأحمر والصورة */
-    pointer-events: none;
-}
-
 .employee-photo-container {
     position: absolute; 
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: clamp(300px, 60%, 718px); /* 👈 مرن والماكس 718px */
+    transform: translate(-45%, -50%);
+    width: clamp(300px, 60%, 718px); /* الإطار الأحمر */
     aspect-ratio: 1 / 1;
     border-radius: 50%;
-    border: 3px solid #8e1d1d; /* 🔴 الإطار الأحمر */
+    border: 3px solid #8e1d1d;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -280,6 +264,19 @@ button:disabled {
     z-index: 1;
 }
 
+.business-card::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: clamp(288px, 57.5%, 706px); /* الأبيض أصغر بحوالي 12px أو 2.5% */
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    pointer-events: none;
+}
 
 
 
